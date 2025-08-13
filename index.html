@@ -6,17 +6,9 @@
 <title>Core & Bodyweight Coach</title>
 <style>
 :root{
-  --bg:#0f1115;
-  --card:#161a22;
-  --ink:#e9ecf1;
-  --muted:#a8b0bf;
-  --brand:#6ee7b7;
-  --accent:#60a5fa;
-  --danger:#f87171;
-  --ok:#34d399;
-  --warn:#fbbf24;
-  --shadow:0 10px 30px rgba(0,0,0,.35);
-  --radius:16px;
+  --bg:#0f1115; --card:#161a22; --ink:#e9ecf1; --muted:#a8b0bf;
+  --brand:#6ee7b7; --accent:#60a5fa; --danger:#f87171; --ok:#34d399; --warn:#fbbf24;
+  --shadow:0 10px 30px rgba(0,0,0,.35); --radius:16px;
 }
 *{box-sizing:border-box}
 html,body{height:100%}
@@ -87,15 +79,18 @@ footer{margin:24px 0;color:var(--muted);text-align:center;font-size:.9rem}
 .list li{display:flex;justify-content:space-between;padding:8px 10px;border-radius:10px;border:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.03);margin-bottom:8px}
 .list li small{color:var(--muted)}
 .notice{background:rgba(110,231,183,.12);border:1px solid rgba(110,231,183,.4);color:#d1fae5;padding:10px 12px;border-radius:12px}
-a.link{color:var(--accent);text-decoration:none;border-bottom:1px dashed rgba(255,255,255,.3)}
-a.link:hover{opacity:.9}
 hr.sep{border:0;border-top:1px dashed rgba(255,255,255,.15);margin:8px 0}
 
 /* Onboarding */
 #onboard{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:50}
-#onboard .sheet{width:min(700px,92vw);background:var(--card);border:1px solid rgba(255,255,255,.12);border-radius:18px;box-shadow:var(--shadow);padding:18px}
+#onboard .sheet{position:relative;width:min(700px,92vw);background:var(--card);border:1px solid rgba(255,255,255,.12);border-radius:18px;box-shadow:var(--shadow);padding:18px;pointer-events:auto}
 .opt-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:10px 0}
-.opt{padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,.12);cursor:pointer}
+.opt{
+  appearance:none; -webkit-appearance:none;
+  padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,.12);
+  background:transparent;color:var(--ink);cursor:pointer;text-align:left;
+  user-select:none; -webkit-tap-highlight-color: transparent;
+}
 .opt.active{border-color:var(--accent);background:rgba(96,165,250,.08)}
 
 /* Skills ladder popover */
@@ -103,10 +98,7 @@ hr.sep{border:0;border-top:1px dashed rgba(255,255,255,.15);margin:8px 0}
 .pop button{width:100%;text-align:left;margin:4px 0}
 
 /* Audio only */
-.audio-only .hero,
-.audio-only .cards-3,
-.audio-only .header .controls .not-audio,
-.audio-only footer{display:none !important}
+.audio-only .hero,.audio-only .cards-3,.audio-only .header .controls .not-audio,.audio-only footer{display:none !important}
 .audio-only .display{min-height:120px}
 .audio-only .time{font-size:3rem}
 </style>
@@ -147,18 +139,9 @@ hr.sep{border:0;border-top:1px dashed rgba(255,255,255,.15);margin:8px 0}
           <button class="ghost" id="buildBtn">Build a week</button>
         </div>
         <div class="kpis" style="margin-top:12px">
-          <div class="kpi">
-            <div class="big" id="streak">0</div>
-            <div class="small">Day streak</div>
-          </div>
-          <div class="kpi">
-            <div class="big" id="sessions">0</div>
-            <div class="small">Sessions done</div>
-          </div>
-          <div class="kpi">
-            <div class="big" id="nextUp">None</div>
-            <div class="small">Next up</div>
-          </div>
+          <div class="kpi"><div class="big" id="streak">0</div><div class="small">Day streak</div></div>
+          <div class="kpi"><div class="big" id="sessions">0</div><div class="small">Sessions done</div></div>
+          <div class="kpi"><div class="big" id="nextUp">None</div><div class="small">Next up</div></div>
         </div>
       </div>
       <div class="card" style="display:flex;flex-direction:column;justify-content:center">
@@ -179,24 +162,15 @@ hr.sep{border:0;border-top:1px dashed rgba(255,255,255,.15);margin:8px 0}
 
     <section class="card cards-3" aria-label="Sessions">
       <div class="card">
-        <div class="section-title">
-          <h3 style="margin:0">Ab foundations</h3>
-          <span class="badge">Control</span>
-        </div>
+        <div class="section-title"><h3 style="margin:0">Ab foundations</h3><span class="badge">Control</span></div>
         <div class="exercise-list" id="setA"></div>
       </div>
       <div class="card">
-        <div class="section-title">
-          <h3 style="margin:0">Power & stability</h3>
-          <span class="badge">Dynamic</span>
-        </div>
+        <div class="section-title"><h3 style="margin:0">Power & stability</h3><span class="badge">Dynamic</span></div>
         <div class="exercise-list" id="setB"></div>
       </div>
       <div class="card">
-        <div class="section-title">
-          <h3 style="margin:0">Full body bodyweight</h3>
-          <span class="badge">Strength</span>
-        </div>
+        <div class="section-title"><h3 style="margin:0">Full body bodyweight</h3><span class="badge">Strength</span></div>
         <div class="exercise-list" id="setC"></div>
       </div>
     </section>
@@ -215,10 +189,7 @@ hr.sep{border:0;border-top:1px dashed rgba(255,255,255,.15);margin:8px 0}
 
     <section class="timer">
       <div class="display">
-        <div>
-          <div class="time" id="time">00:30</div>
-          <div class="stage" id="stage">Ready</div>
-        </div>
+        <div><div class="time" id="time">00:30</div><div class="stage" id="stage">Ready</div></div>
       </div>
       <div class="progress"><div class="bar" id="bar"></div></div>
       <div class="controls-row">
@@ -260,10 +231,10 @@ hr.sep{border:0;border-top:1px dashed rgba(255,255,255,.15);margin:8px 0}
     <div id="step1">
       <p class="small">Goal</p>
       <div class="opt-grid">
-        <div class="opt" data-goal="flat-abs" role="button" tabindex="0">Flatter abs</div>
-        <div class="opt" data-goal="strong-core" role="button" tabindex="0">Stronger core</div>
-        <div class="opt" data-goal="calisthenics" role="button" tabindex="0">Calisthenics skills</div>
-        <div class="opt" data-goal="fat-loss" role="button" tabindex="0">Fat loss focus</div>
+        <button type="button" class="opt" data-goal="flat-abs">Flatter abs</button>
+        <button type="button" class="opt" data-goal="strong-core">Stronger core</button>
+        <button type="button" class="opt" data-goal="calisthenics">Calisthenics skills</button>
+        <button type="button" class="opt" data-goal="fat-loss">Fat loss focus</button>
       </div>
       <div class="row">
         <button id="toStep2" class="primary" disabled>Continue</button>
@@ -275,26 +246,26 @@ hr.sep{border:0;border-top:1px dashed rgba(255,255,255,.15);margin:8px 0}
         <div style="flex:1">
           <p class="small">Experience</p>
           <div class="opt-grid">
-            <div class="opt" data-level="new" role="button" tabindex="0">New</div>
-            <div class="opt" data-level="trained" role="button" tabindex="0">Trained</div>
-            <div class="opt" data-level="advanced" role="button" tabindex="0">Advanced</div>
+            <button type="button" class="opt" data-level="new">New</button>
+            <button type="button" class="opt" data-level="trained">Trained</button>
+            <button type="button" class="opt" data-level="advanced">Advanced</button>
           </div>
         </div>
         <div style="flex:1">
           <p class="small">Days per week</p>
           <div class="opt-grid">
-            <div class="opt" data-days="3" role="button" tabindex="0">3</div>
-            <div class="opt" data-days="4" role="button" tabindex="0">4</div>
-            <div class="opt" data-days="5" role="button" tabindex="0">5</div>
-            <div class="opt" data-days="6" role="button" tabindex="0">6</div>
+            <button type="button" class="opt" data-days="3">3</button>
+            <button type="button" class="opt" data-days="4">4</button>
+            <button type="button" class="opt" data-days="5">5</button>
+            <button type="button" class="opt" data-days="6">6</button>
           </div>
         </div>
       </div>
       <p class="small">Session length</p>
       <div class="opt-grid">
-        <div class="opt" data-mins="10" role="button" tabindex="0">10 minutes</div>
-        <div class="opt" data-mins="20" role="button" tabindex="0">20 minutes</div>
-        <div class="opt" data-mins="30" role="button" tabindex="0">30 minutes</div>
+        <button type="button" class="opt" data-mins="10">10 minutes</button>
+        <button type="button" class="opt" data-mins="20">20 minutes</button>
+        <button type="button" class="opt" data-mins="30">30 minutes</button>
       </div>
       <div class="row">
         <button id="saveOnboard" class="primary" disabled>Save plan</button>
@@ -351,7 +322,7 @@ let absTrack = getStore("absTrack", {done:[], seed:1});
 let challenges = getStore("chals", initChallenges());
 let currentAbsDay = null;
 
-// Storage helpers
+// Storage
 function setStore(k,v){ localStorage.setItem(k, JSON.stringify(v)); }
 function getStore(k,f){ try{return JSON.parse(localStorage.getItem(k)) ?? f}catch{return f} }
 
@@ -363,16 +334,13 @@ function defaultPlan(){
 }
 
 // Build UI
-renderPlan();
-syncStatsUI();
-renderAbsTrack();
-renderChallenges();
+renderPlan(); syncStatsUI(); renderAbsTrack(); renderChallenges();
 ["setA","setB","setC"].forEach(key=>{
   const parent = document.getElementById(key);
   LIB[key].forEach(ex => parent.appendChild(exerciseRow(ex)));
 });
 
-// Exercise cards
+// Exercise card
 function exerciseRow(ex){
   const el = document.createElement("div");
   el.className = "exercise";
@@ -430,16 +398,9 @@ function showLadder(anchor, ladder, onPick){
 
 // Plan
 function renderPlan(){
-  const ul = $("#planList");
-  ul.innerHTML = "";
-  plan.forEach((p)=>{
-    const li = document.createElement("li");
-    const label = p.block === "rest" ? "Rest" : prettyBlock(p.block);
-    li.innerHTML = `<span><strong>${p.day}</strong></span><span>${label}</span>`;
-    ul.appendChild(li);
-  });
-  const today = new Date();
-  const todayIdx = (today.getDay()+6)%7; // Monday 0
+  const ul = $("#planList"); ul.innerHTML = "";
+  plan.forEach((p)=>{ const li = document.createElement("li"); const label = p.block === "rest" ? "Rest" : prettyBlock(p.block); li.innerHTML = `<span><strong>${p.day}</strong></span><span>${label}</span>`; ul.appendChild(li); });
+  const today = new Date(); const todayIdx = (today.getDay()+6)%7;
   $("#nextUp").textContent = plan[todayIdx]?.block === "rest" ? "Rest" : prettyBlock(plan[todayIdx]?.block || "setA");
 }
 function prettyBlock(block){ return block === "setA" ? "Ab foundations" : block === "setB" ? "Power & stability" : "Full body"; }
@@ -478,53 +439,34 @@ function shufflePlan(){
   setStore("plan", plan); renderPlan();
 }
 function startToday(){
-  const today = new Date();
-  const todayIdx = (today.getDay()+6)%7;
+  const today = new Date(); const todayIdx = (today.getDay()+6)%7;
   const block = plan[todayIdx]?.block || "setA";
   const cfg = {set:block, rounds: block === "setC" ? 4 : 3};
   const mins = profile?.mins || 20;
   const scale = mins>=30?1.15: mins<=10?0.85:1;
   buildQueue(cfg.set, cfg.rounds, scale);
-  speak("Starting " + prettyBlock(cfg.set));
-  startTimer();
+  speak("Starting " + prettyBlock(cfg.set)); startTimer();
 }
-function startTimer(){
-  if(queue.length===0){ buildQueue("setA",2); }
-  if(idx===-1) idx = 0;
-  tickSetup();
-  if(timer) clearInterval(timer);
-  timer = setInterval(tick, 100);
-}
+function startTimer(){ if(queue.length===0){ buildQueue("setA",2); } if(idx===-1) idx=0; tickSetup(); if(timer) clearInterval(timer); timer = setInterval(tick, 100); }
 function tickSetup(){
   const step = queue[idx];
-  resting = step.type !== "work";
-  total = step.work * 1000; left = total;
+  resting = step.type !== "work"; total = step.work*1000; left = total;
   updateStage(`${step.name} ${resting ? "" : "(Round " + step.round + ")"}`);
   if($("#countdown3").checked && !resting){
     countdown3(()=>{ if($("#soundToggle").checked) beep(); speak(step.name + ". " + (step.cue || "")); });
-  }else{
-    if($("#soundToggle").checked) beep(); speak(step.name + (step.cue ? ". " + step.cue : ""));
-  }
+  }else{ if($("#soundToggle").checked) beep(); speak(step.name + (step.cue ? ". " + step.cue : "")); }
   updateTime(); updateBar(0);
 }
-function tick(){
-  left -= 100; if(left<0) left=0;
-  updateTime(); updateBar(1 - left/total);
-  if(left===0){ if($("#autoAdvance").checked){ nextStep(); } else { clearInterval(timer); timer=null; } }
-}
+function tick(){ left -= 100; if(left<0) left=0; updateTime(); updateBar(1-left/total); if(left===0){ if($("#autoAdvance").checked){ nextStep(); } else { clearInterval(timer); timer=null; } } }
 function nextStep(){
-  idx++;
-  if(idx>=queue.length){ clearInterval(timer); timer=null; finishSession(); return; }
+  idx++; if(idx>=queue.length){ clearInterval(timer); timer=null; finishSession(); return; }
   if(!$("#autoRest").checked && queue[idx].type!=="work"){ idx++; }
   if(idx>=queue.length){ clearInterval(timer); timer=null; finishSession(); return; }
   tickSetup();
 }
 function pauseTimer(){ if(!timer) return; clearInterval(timer); timer=null; }
 function restartTimer(){ if(timer) clearInterval(timer); idx=-1; updateStage("Ready"); updateTime(0,0); updateBar(0); }
-function finishSession(){
-  updateStage("Done. Nice work."); updateTime(0,0); updateBar(1);
-  if($("#soundToggle").checked){ chime(); } trackComplete();
-}
+function finishSession(){ updateStage("Done. Nice work."); updateTime(0,0); updateBar(1); if($("#soundToggle").checked){ chime(); } trackComplete(); }
 function updateStage(txt){ $("#stage").textContent = txt; }
 function updateTime(){ const s = Math.ceil(left/1000); const mm = String(Math.floor(s/60)).padStart(2,"0"); const ss = String(s%60).padStart(2,"0"); $("#time").textContent = `${mm}:${ss}`; }
 function updateBar(p){ $("#bar").style.width = `${Math.max(0,Math.min(1,p))*100}%`; }
@@ -585,14 +527,13 @@ function showHistory(){
     ${hist.length===0 ? "<p>No history yet.</p>" : hist.map(h => `
       <div class="item">
         <div class="meta"><small>${new Date(h.id).toLocaleString()}</small><small>RPE ${h.rpe}</small></div>
-        ${h.notes ? `<p>${escapeHtml(h.notes)}</p>` : ""}
+        ${h.notes ? `<p>${h.notes.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}</p>` : ""}
         <ul>${h.steps.filter(s=>s.type==="work").map(s=> `<li>${s.name} ${s.work}s ${s.round ? "(Round " + s.round + ")" : ""}</li>`).join("")}</ul>
       </div>`).join("")}
     </body></html>`); win.document.close();
 }
-function escapeHtml(s){ return s.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
 
-// Onboarding
+// Onboarding with event delegation and real buttons
 function openOnboard(){ $("#onboard").style.display = "flex"; }
 function closeOnboard(){ $("#onboard").style.display = "none"; }
 function initOnboard(){
@@ -600,33 +541,33 @@ function initOnboard(){
   let goal=null, level=null, days=null, mins=null;
 
   // Step 1
-  $$("#step1 .opt").forEach(o=>{
-    o.addEventListener("click", ()=>{ $$("#step1 .opt").forEach(x=>x.classList.remove("active")); o.classList.add("active"); goal = o.dataset.goal; $("#toStep2").disabled = !goal; });
-    o.addEventListener("keydown", e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); o.click(); }});
+  $("#step1").addEventListener("click", e=>{
+    const o = e.target.closest(".opt[data-goal]"); if(!o) return;
+    $$("#step1 .opt").forEach(x=>x.classList.remove("active"));
+    o.classList.add("active"); goal = o.dataset.goal;
+    $("#toStep2").disabled = !goal;
   });
   $("#toStep2").addEventListener("click", ()=>{ $("#step1").style.display="none"; $("#step2").style.display="block"; });
   $("#backOnboard").addEventListener("click", ()=>{ $("#step2").style.display="none"; $("#step1").style.display="block"; });
   $("#cancelOnboard").addEventListener("click", closeOnboard);
 
-  // Step 2 groups
-  $$("#step2 .opt").forEach(o=>{
-    o.addEventListener("click", ()=>{
-      if(o.hasAttribute("data-level")){
-        $$("#step2 .opt[data-level]").forEach(x=>x.classList.remove("active"));
-        level = o.dataset.level;
-      }
-      if(o.hasAttribute("data-days")){
-        $$("#step2 .opt[data-days]").forEach(x=>x.classList.remove("active"));
-        days = Number(o.dataset.days);
-      }
-      if(o.hasAttribute("data-mins")){
-        $$("#step2 .opt[data-mins]").forEach(x=>x.classList.remove("active"));
-        mins = Number(o.dataset.mins);
-      }
-      o.classList.add("active");
-      $("#saveOnboard").disabled = !(goal && level && days && mins);
-    });
-    o.addEventListener("keydown", e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); o.click(); }});
+  // Step 2
+  $("#step2").addEventListener("click", e=>{
+    const btn = e.target.closest(".opt"); if(!btn) return;
+
+    if(btn.hasAttribute("data-level")){
+      $$("#step2 .opt[data-level]").forEach(x=>x.classList.remove("active"));
+      btn.classList.add("active"); level = btn.dataset.level;
+    }
+    if(btn.hasAttribute("data-days")){
+      $$("#step2 .opt[data-days]").forEach(x=>x.classList.remove("active"));
+      btn.classList.add("active"); days = Number(btn.dataset.days);
+    }
+    if(btn.hasAttribute("data-mins")){
+      $$("#step2 .opt[data-mins]").forEach(x=>x.classList.remove("active"));
+      btn.classList.add("active"); mins = Number(btn.dataset.mins);
+    }
+    $("#saveOnboard").disabled = !(goal && level && days && mins);
   });
 
   $("#saveOnboard").addEventListener("click", ()=>{
