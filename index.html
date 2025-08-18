@@ -600,33 +600,40 @@ if(!GS.bingo || !GS.bingo.tiles || GS.bingo.tiles.length!==9){ newBingo(); } els
 /* =============== Theme on load =============== */
 applyTheme(GS.theme||'default');
 
-/* =============== Controls =============== */
-$('#roll').addEventListener('click', pickRandom, {passive:true});
-$('#start').addEventListener('click', startTimer, {passive:true});
-$('#pause').addEventListener('click', stopTimer, {passive:true});
-$('#reset').addEventListener('click', resetTimer, {passive:true});
-$('#plus10').addEventListener('click', ()=> plus(10), {passive:true});
-$('#minus10').addEventListener('click', ()=> minus(10), {passive:true});
+// Controls
+onTap($('#roll'), pickRandom);
+onTap($('#start'), startTimer);
+onTap($('#pause'), stopTimer);
+onTap($('#reset'), resetTimer);
+onTap($('#plus10'), ()=> plus(10));
+onTap($('#minus10'), ()=> minus(10));
 
-$('#lucky').onclick = (e)=>{ luckyDip = !luckyDip; e.currentTarget.classList.toggle('active', luckyDip); e.currentTarget.setAttribute('aria-pressed', luckyDip); toast(luckyDip?'Lucky dip on':'Lucky dip off'); };
-$$('[data-fixedlevel]').forEach(b=>{
-  b.onclick = ()=>{
-    $$('[data-fixedlevel]').forEach(x=>x.classList.remove('active'));
+// Lucky dip and level chips
+onTap($('#lucky'), (e)=>{
+  luckyDip = !luckyDip;
+  e.currentTarget.classList.toggle('active', luckyDip);
+  e.currentTarget.setAttribute('aria-pressed', luckyDip);
+  toast(luckyDip ? 'Lucky dip on' : 'Lucky dip off');
+});
+document.querySelectorAll('[data-fixedlevel]').forEach(b=>{
+  onTap(b, ()=>{
+    document.querySelectorAll('[data-fixedlevel]').forEach(x=>x.classList.remove('active'));
     b.classList.add('active');
     fixedLevel = Number(b.getAttribute('data-fixedlevel'));
-  };
+  });
 });
 
-$('#sessionBtn').onclick = ()=>{
-  inSession = true; sessionLeft = 6; combo = 1;
-  toast('Session: 6 moves. Go.');
-  pickRandom();
-};
-$('#bingoBtn').onclick = ()=>{
+// Session, Bingo, dialogs
+onTap($('#sessionBtn'), ()=>{ inSession = true; sessionLeft = 6; combo = 1; toast('Session: 6 moves. Go.'); pickRandom(); });
+onTap($('#bingoBtn'), ()=>{
   const sec = $('#bingoCard'); sec.hidden = !sec.hidden;
   if(!sec.hidden) renderBingo();
-};
-$('#bingoNew').onclick = ()=> newBingo();
+});
+onTap($('#bingoNew'), newBingo);
+onTap($('#shopBtn'), ()=> $('#shop').showModal());
+onTap($('#achBtn'), ()=> showAchievements());
+document.querySelectorAll('dialog [data-close]').forEach(b=> onTap(b, (e)=> e.target.closest('dialog').close()));
+document.querySelectorAll('.swatch').forEach(s=> onTap(s, ()=> buyTheme(s.getAttribute('data-theme'))));
 
 /* =============== Dialogs =============== */
 $('#shopBtn').onclick = ()=> $('#shop').showModal();
