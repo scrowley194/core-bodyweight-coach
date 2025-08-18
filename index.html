@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Simple Core Randomiser</title>
+<title>Simple Core Randomiser • Gamified</title>
 <style>
   :root{
     --bg:#0f1115; --card:#161a22; --ink:#e9ecf1; --muted:#9aa3b2;
@@ -14,11 +14,11 @@
   html,body{height:100%}
   body{margin:0;background:var(--bg);color:var(--ink);
        font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial}
-  .wrap{max-width:760px;margin:0 auto;padding:20px}
+  .wrap{max-width:860px;margin:0 auto;padding:20px}
   h1{font-size:1.4rem;margin:0 0 10px}
   .card{background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
         border:1px solid rgba(255,255,255,.10);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px}
-  .row{display:flex;gap:10px;flex-wrap:wrap}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
   .btn{
     appearance:none;-webkit-appearance:none;cursor:pointer;border-radius:12px;
     border:1px solid rgba(255,255,255,.14);padding:12px 16px;font-weight:700;color:var(--ink);
@@ -29,6 +29,7 @@
   .btn:active{transform:translateY(1px)}
   .btn.primary{background:linear-gradient(135deg,var(--accent),var(--brand));color:#0b1020;border-color:transparent}
   .btn.ghost{background:transparent;border:1px dashed rgba(255,255,255,.25);color:var(--muted)}
+  .btn.link{background:transparent;border:0;padding:6px 8px;color:var(--accent);text-decoration:underline;cursor:pointer}
   .title{font-size:1.35rem;margin:2px 0 8px}
   .muted{color:var(--muted)}
   .stack{display:grid;gap:10px}
@@ -36,47 +37,71 @@
   .chip.active{border-color:var(--accent);background:rgba(96,165,250,.12)}
   .desc{line-height:1.45;margin:6px 0 0}
   .box{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.10);border-radius:12px;padding:12px}
-  .timer{
-    display:grid;gap:10px;justify-items:center;text-align:center
-  }
+  .timer{display:grid;gap:10px;justify-items:center;text-align:center}
   .time{font-size:2.8rem;font-weight:900;letter-spacing:.5px}
   .progress{width:100%;height:10px;border-radius:999px;background:rgba(255,255,255,.06);overflow:hidden;border:1px solid rgba(255,255,255,.12)}
   .bar{height:100%;width:0%;background:linear-gradient(90deg,var(--brand),var(--accent));transition:width .2s linear}
+  .xpbar{height:10px;border-radius:999px;background:rgba(255,255,255,.06);overflow:hidden;border:1px solid rgba(255,255,255,.12)}
+  .xpfill{height:100%;width:0%;background:linear-gradient(90deg,var(--accent),var(--brand))}
+
+  .pill{padding:6px 10px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);font-weight:700}
+  .kv{display:grid;grid-template-columns:1fr auto auto auto;gap:8px;align-items:center}
+  .kv .stat{display:flex;gap:8px;align-items:center}
+  .kv strong{font-size:1rem}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .tile{padding:10px;border-radius:12px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);text-align:center;font-weight:700;min-height:70px;display:flex;justify-content:center;align-items:center}
+  .tile.done{background:linear-gradient(135deg, rgba(110,231,183,.18), rgba(96,165,250,.18));border-color:rgba(110,231,183,.6)}
+  .toast{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);background:#101521;border:1px solid rgba(255,255,255,.12);color:var(--ink);padding:10px 14px;border-radius:10px;box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:opacity .2s, transform .2s}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(-6px)}
+  canvas#confetti{position:fixed;inset:0;pointer-events:none}
   footer{margin:18px 0;color:var(--muted);font-size:.9rem;text-align:center}
+  dialog.modal{border:none;border-radius:16px;background:#0f1422;color:var(--ink);padding:0;max-width:520px}
+  .modal .head{padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.1);font-weight:800}
+  .modal .body{padding:14px 16px}
+  .shop{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .swatch{aspect-ratio:1;border-radius:12px;border:1px solid rgba(255,255,255,.2);display:grid;place-items:center;cursor:pointer}
+  .swatch small{opacity:.85}
+  .badge{display:inline-flex;gap:8px;align-items:center;border:1px solid rgba(255,255,255,.14);border-radius:12px;padding:8px 10px;background:rgba(255,255,255,.06)}
 </style>
 </head>
 <body>
+<canvas id="confetti"></canvas>
+
 <div class="wrap">
-  <header class="card" style="display:flex;align-items:center;justify-content:space-between;gap:10px">
-    <div>
-      <h1>Simple Core Randomiser</h1>
-      <p class="muted" style="margin:0">Tap once to get a bodyweight move for strong, toned abs. No kit. No accounts.</p>
+  <header class="card">
+    <div class="kv">
+      <div>
+        <h1 style="margin-bottom:6px">Simple Core Randomiser</h1>
+        <div class="row">
+          <span class="pill">Level <strong id="lvl">1</strong></span>
+          <span class="pill">XP <strong id="xpNum">0</strong>/<strong id="xpNeed">100</strong></span>
+          <span class="pill">Coins <strong id="coins">0</strong> 🪙</span>
+          <span class="pill">Streak <strong id="streak">0</strong> 🔥</span>
+        </div>
+        <div class="xpbar" style="margin-top:8px"><div id="xpfill" class="xpfill"></div></div>
+      </div>
+      <button id="roll" class="btn primary">Give me an exercise</button>
+      <button id="sessionBtn" class="btn">6-move session</button>
+      <button id="bingoBtn" class="btn ghost">Core Bingo</button>
     </div>
-    <button id="roll" class="btn primary">Give me an exercise</button>
+
+    <div class="row" style="margin-top:10px">
+      <button id="lucky" class="chip" aria-pressed="false" title="Randomise difficulty each roll">Lucky dip</button>
+      <div class="row" role="tablist" aria-label="Difficulty">
+        <button class="chip active" data-fixedlevel="0">Easy</button>
+        <button class="chip" data-fixedlevel="1">Standard</button>
+        <button class="chip" data-fixedlevel="2">Spicy</button>
+      </div>
+      <button id="shopBtn" class="btn link">Shop</button>
+      <button id="achBtn" class="btn link">Achievements</button>
+    </div>
+
+    <p class="muted" style="margin:8px 0 0">Daily goal: <strong id="goalMin">8</strong> min • Done today: <strong id="doneMin">0</strong> min</p>
   </header>
-<section class="card" id="modes" style="margin-top:12px">
-  <div class="row" style="align-items:center;justify-content:space-between">
-    <div>
-      <div class="title">Quick modes</div>
-      <p class="muted" style="margin:0">Pick a way to play. You can still tap “Give me an exercise” any time.</p>
-    </div>
-    <div class="row" style="flex-wrap:nowrap">
-      <button class="btn" id="mode-single">Single</button>
-      <button class="btn" id="mode-combo">Combo ×3</button>
-      <button class="btn" id="mode-emom">EMOM 5</button>
-      <button class="btn" id="mode-amrap">AMRAP 5</button>
-    </div>
-  </div>
-  <div class="row" style="margin-top:8px;align-items:center">
-    <label class="chip"><input id="toggle-voice" type="checkbox" style="accent-color:#60a5fa;margin-right:6px"> Voice cues</label>
-    <label class="chip"><input id="toggle-penalty" type="checkbox" style="accent-color:#60a5fa;margin-right:6px"> Penalty 10s plank</label>
-    <label class="chip"><input id="toggle-spice" type="checkbox" style="accent-color:#60a5fa;margin-right:6px"> 20% spicier</label>
-  </div>
-  <p class="muted" id="streakLine" style="margin:8px 0 0">Streak: 0 days • Rounds today: 0</p>
-</section>
+
   <main class="stack" style="margin-top:12px">
     <section id="result" class="card" aria-live="polite">
-      <p class="muted" style="margin:0">Tap the button above to start.</p>
+      <p class="muted" style="margin:0">Tap the button to start. Finish timers to earn XP, coins and streaks.</p>
     </section>
 
     <section id="timerCard" class="card" hidden>
@@ -91,352 +116,527 @@
           <button class="btn ghost" id="reset">Reset</button>
         </div>
         <p class="muted" id="tip" style="margin:6px 0 0">Tip: breathe through the nose, keep ribs down.</p>
+        <p class="muted" id="combo" style="margin:0">Combo: <strong id="comboVal">x1</strong></p>
       </div>
+    </section>
+
+    <section id="bingoCard" class="card" hidden>
+      <div class="row" style="justify-content:space-between">
+        <div>
+          <div class="title">Core Bingo</div>
+          <p class="muted" style="margin:0">Complete any line for a bonus.</p>
+        </div>
+        <button class="btn ghost" id="bingoNew">New card</button>
+      </div>
+      <div id="bingoGrid" class="grid" style="margin-top:10px"></div>
     </section>
   </main>
 
   <footer>Everything runs in your browser and stays on your device.</footer>
 </div>
 
+<dialog id="shop" class="modal">
+  <div class="head">Shop • Spend coins on themes</div>
+  <div class="body">
+    <div class="shop">
+      <div class="swatch" data-theme="ocean" title="Ocean">
+        <small>Ocean</small>
+      </div>
+      <div class="swatch" data-theme="sunset" title="Sunset">
+        <small>Sunset</small>
+      </div>
+      <div class="swatch" data-theme="neon" title="Neon">
+        <small>Neon</small>
+      </div>
+    </div>
+    <p class="muted" style="margin-top:10px">Cost: 30 coins each. Owned themes stay unlocked.</p>
+    <div class="row" style="justify-content:flex-end;margin-top:8px">
+      <button class="btn" data-close>Close</button>
+    </div>
+  </div>
+</dialog>
+
+<dialog id="ach" class="modal">
+  <div class="head">Achievements</div>
+  <div class="body" id="achList">
+    <!-- filled by JS -->
+    <div class="row" style="justify-content:flex-end;margin-top:8px">
+      <button class="btn" data-close>Close</button>
+    </div>
+  </div>
+</dialog>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
 <script>
-  // Shortcuts
-  const $ = s => document.querySelector(s);
+/* =============== Utilities and storage =============== */
+const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const store = {
+  get(){ try{ return JSON.parse(localStorage.getItem('coreGame')||'{}'); }catch{ return {}; } },
+  set(data){ localStorage.setItem('coreGame', JSON.stringify(data)); },
+  patch(p){ const d = store.get(); Object.assign(d,p); store.set(d); }
+};
+function todayStr(){ const d = new Date(); return d.toISOString().slice(0,10); }
+function vibrate(ms=40){ if(navigator.vibrate) navigator.vibrate(ms); }
 
-  // Simple audio beep at the end
-  let audioCtx=null;
-  function initAudio(){ if(!audioCtx){ try{ audioCtx = new (window.AudioContext||window.webkitAudioContext)(); }catch{} } }
-  function beep(){
-    if(!audioCtx) return;
-    const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
-    o.type = "sine"; o.frequency.value = 880;
-    g.gain.value = 0.0001;
-    o.connect(g).connect(audioCtx.destination);
-    o.start();
-    g.gain.exponentialRampToValueAtTime(0.25, audioCtx.currentTime + 0.02);
-    g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.18);
-    o.stop(audioCtx.currentTime + 0.2);
+/* =============== Audio beep =============== */
+let audioCtx=null;
+function initAudio(){ if(!audioCtx){ try{ audioCtx = new (window.AudioContext||window.webkitAudioContext)(); }catch{} } }
+function beep(){
+  if(!audioCtx) return;
+  const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
+  o.type = "sine"; o.frequency.value = 880;
+  g.gain.value = 0.0001;
+  o.connect(g).connect(audioCtx.destination);
+  o.start();
+  g.gain.exponentialRampToValueAtTime(0.25, audioCtx.currentTime + 0.02);
+  g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.18);
+  o.stop(audioCtx.currentTime + 0.2);
+}
+
+/* =============== Confetti (tiny) =============== */
+const confettiCanvas = $('#confetti');
+const ctx = confettiCanvas.getContext('2d');
+function sizeCanvas(){ confettiCanvas.width = innerWidth; confettiCanvas.height = innerHeight; }
+sizeCanvas(); addEventListener('resize', sizeCanvas);
+let pieces = [];
+function burstConfetti(){
+  pieces = [];
+  for(let i=0;i<100;i++){
+    pieces.push({x:innerWidth/2,y:innerHeight*0.7,vx:(Math.random()-0.5)*6,vy: -Math.random()*6-2, r:Math.random()*3+2, a:1});
   }
-
-  // Exercise library
-  // Each item: name, how, levels [easy, standard, spicy], baseSec (easy), tags
-  const MOVES = [
-    {name:"Dead bug",
-     how:"Lie on your back, arms up, hips and knees at 90. Press your lower back into the floor. Exhale as you reach opposite arm and leg, then return and switch sides.",
-     levels:[
-       {label:"Easy", mod:"Toe taps only", sec:25},
-       {label:"Standard", mod:"Opposite arm and leg", sec:35},
-       {label:"Spicy", mod:"Add 2 second pauses at full reach", sec:45}
-     ]},
-    {name:"Hollow hold",
-     how:"Tuck ribs down and curl shoulders just off the floor. Extend legs and arms only as far as you can keep your lower back pressed down.",
-     levels:[
-       {label:"Easy", mod:"Tuck position", sec:20},
-       {label:"Standard", mod:"One leg long", sec:30},
-       {label:"Spicy", mod:"Full hollow, arms overhead", sec:40}
-     ]},
-    {name:"Plank",
-     how:"Elbows under shoulders, body in a straight line from head to heels. Squeeze glutes and keep ribs down. Do not let hips sag.",
-     levels:[
-       {label:"Easy", mod:"Knees down", sec:25},
-       {label:"Standard", mod:"High or low plank", sec:40},
-       {label:"Spicy", mod:"Narrow feet or weight shift", sec:50}
-     ]},
-    {name:"Side plank",
-     how:"Elbow under shoulder, feet stacked. Lift hips and keep a straight line. Push top hip forward.",
-     levels:[
-       {label:"Easy", mod:"Knees bent", sec:20},
-       {label:"Standard", mod:"Feet stacked", sec:30},
-       {label:"Spicy", mod:"Star position or hip dips", sec:40}
-     ]},
-    {name:"Reverse crunch",
-     how:"On your back with knees bent. Curl the pelvis to bring knees towards chest. Lower with control. Do not swing the legs.",
-     levels:[
-       {label:"Easy", mod:"Small range", sec:25},
-       {label:"Standard", mod:"Full range", sec:35},
-       {label:"Spicy", mod:"Straight legs or 2 second pause at top", sec:45}
-     ]},
-    {name:"Bicycle crunch",
-     how:"Hands light behind head. Lift shoulders and cycle legs. Twist ribs towards opposite knee. Slow and controlled.",
-     levels:[
-       {label:"Easy", mod:"Small range", sec:25},
-       {label:"Standard", mod:"Full range", sec:35},
-       {label:"Spicy", mod:"Slow tempo, 3 second holds", sec:45}
-     ]},
-    {name:"Mountain climbers",
-     how:"High plank. Drive one knee towards chest then switch at a steady pace. Keep hips level.",
-     levels:[
-       {label:"Easy", mod:"Slow pace", sec:25},
-       {label:"Standard", mod:"Steady pace", sec:35},
-       {label:"Spicy", mod:"Cross body to opposite elbow", sec:45}
-     ]},
-    {name:"Bird dog",
-     how:"On hands and knees. Reach opposite arm and leg long. Pause to stop wobble then switch.",
-     levels:[
-       {label:"Easy", mod:"Small reach", sec:25},
-       {label:"Standard", mod:"Full reach with 1 second pause", sec:35},
-       {label:"Spicy", mod:"5 second pause or draw a box", sec:45}
-     ]},
-    {name:"Glute bridge",
-     how:"Feet hip width. Tilt pelvis then lift hips, ribs down. Squeeze at the top and lower with control.",
-     levels:[
-       {label:"Easy", mod:"Double leg", sec:30},
-       {label:"Standard", mod:"Marching at top", sec:40},
-       {label:"Spicy", mod:"Single leg", sec:50}
-     ]},
-    {name:"Leg lowers",
-     how:"Lie on back, legs up. Press lower back down. Lower both legs slowly without losing contact, then raise.",
-     levels:[
-       {label:"Easy", mod:"Bend knees a little", sec:20},
-       {label:"Standard", mod:"Straight legs to 45 degrees", sec:30},
-       {label:"Spicy", mod:"Lower close to floor then pause", sec:40}
-     ]},
-    {name:"Flutter kicks",
-     how:"Lie back, legs long. Lower back pressed down. Alternate small quick kicks just above the floor.",
-     levels:[
-       {label:"Easy", mod:"Hands under hips", sec:25},
-       {label:"Standard", mod:"Arms by sides", sec:35},
-       {label:"Spicy", mod:"Arms overhead", sec:45}
-     ]},
-    {name:"Toe reaches",
-     how:"Legs up straight. Reach hands towards toes by curling ribs down and lifting shoulders. Lower with control.",
-     levels:[
-       {label:"Easy", mod:"Small reach", sec:20},
-       {label:"Standard", mod:"Full reach", sec:30},
-       {label:"Spicy", mod:"Slow tempo with holds", sec:40}
-     ]},
-    {name:"Plank shoulder taps",
-     how:"High plank, feet a bit wider. Tap opposite shoulder without letting hips rock.",
-     levels:[
-       {label:"Easy", mod:"Hands on a box or sofa", sec:25},
-       {label:"Standard", mod:"Floor taps", sec:35},
-       {label:"Spicy", mod:"Feet close together", sec:45}
-     ]},
-    {name:"Plank knee to elbow",
-     how:"From plank, bring knee towards elbow with a small crunch. Swap sides.",
-     levels:[
-       {label:"Easy", mod:"Slow range", sec:25},
-       {label:"Standard", mod:"Steady pace", sec:35},
-       {label:"Spicy", mod:"Hold the squeeze for 1 to 2 seconds", sec:45}
-     ]},
-    {name:"Bear crawl hold",
-     how:"On hands and knees, lift knees 2 to 3 cm off the floor. Keep back flat and breathe.",
-     levels:[
-       {label:"Easy", mod:"Static hold", sec:20},
-       {label:"Standard", mod:"Slow shoulder taps", sec:30},
-       {label:"Spicy", mod:"Opposite hand and foot steps", sec:40}
-     ]},
-    {name:"V-sit hold",
-     how:"Balance on sit bones. Lift chest, ribs down, shins parallel. Hold and breathe.",
-     levels:[
-       {label:"Easy", mod:"Hands on thighs", sec:20},
-       {label:"Standard", mod:"Arms forward", sec:30},
-       {label:"Spicy", mod:"Legs straighter and lower", sec:40}
-     ]},
-    {name:"Russian twists",
-     how:"Sit tall, lean back a touch, lift feet if able. Rotate ribs side to side. Keep the move smooth.",
-     levels:[
-       {label:"Easy", mod:"Feet down", sec:25},
-       {label:"Standard", mod:"Feet up", sec:35},
-       {label:"Spicy", mod:"Slow tempo with pauses", sec:45}
-     ]},
-    {name:"Seated knee tucks",
-     how:"Sit on hands, chest tall. Extend legs away then tuck knees back in without rounding the back.",
-     levels:[
-       {label:"Easy", mod:"Small range", sec:25},
-       {label:"Standard", mod:"Full range", sec:35},
-       {label:"Spicy", mod:"Hold straight legs for 1 second each rep", sec:45}
-     ]},
-    {name:"Jackknife",
-     how:"Lie back, arms overhead. Lift legs and reach hands to meet them, then lower with control.",
-     levels:[
-       {label:"Easy", mod:"Bent knees", sec:20},
-       {label:"Standard", mod:"Straight legs", sec:30},
-       {label:"Spicy", mod:"Slow eccentric lower", sec:40}
-     ]},
-    {name:"Plank saw",
-     how:"Low plank. Rock body forward and back from shoulders while keeping ribs down.",
-     levels:[
-       {label:"Easy", mod:"Small rocks", sec:25},
-       {label:"Standard", mod:"Bigger range", sec:35},
-       {label:"Spicy", mod:"Feet together, long rocks", sec:45}
-     ]},
-    {name:"Side plank hip dips",
-     how:"From side plank, lower hips a few cm then lift to straight line. Smooth and controlled.",
-     levels:[
-       {label:"Easy", mod:"Knees down", sec:20},
-       {label:"Standard", mod:"Feet stacked", sec:30},
-       {label:"Spicy", mod:"Top leg raised", sec:40}
-     ]},
-    {name:"Hollow rocks",
-     how:"Hold a tight hollow shape and rock gently without losing position.",
-     levels:[
-       {label:"Easy", mod:"Tuck rocks", sec:20},
-       {label:"Standard", mod:"One leg long", sec:30},
-       {label:"Spicy", mod:"Full hollow rocks", sec:40}
-     ]},
-    {name:"Superman hold",
-     how:"Lie face down. Lift arms and legs slightly, squeeze glutes, keep gaze down to keep neck neutral.",
-     levels:[
-       {label:"Easy", mod:"Arms by sides", sec:20},
-       {label:"Standard", mod:"Arms overhead", sec:30},
-       {label:"Spicy", mod:"Swimmer kicks", sec:40}
-     ]},
-    {name:"Walkout to plank",
-     how:"From standing, fold, walk hands to plank, hold a moment, then walk back and stand tall.",
-     levels:[
-       {label:"Easy", mod:"Short walkout", sec:25},
-       {label:"Standard", mod:"Full walkout", sec:35},
-       {label:"Spicy", mod:"Add a press-up in plank", sec:45}
-     ]},
-    {name:"Inchworm",
-     how:"From standing, walk hands to plank, add a small push-up if able, then walk feet in small steps to your hands.",
-     levels:[
-       {label:"Easy", mod:"No push-up", sec:25},
-       {label:"Standard", mod:"With push-up", sec:35},
-       {label:"Spicy", mod:"With shoulder tap at plank", sec:45}
-     ]},
-    {name:"Standing knee to elbow",
-     how:"Hands by head, bring knee to opposite elbow with a small crunch. Swap sides.",
-     levels:[
-       {label:"Easy", mod:"Slow pace", sec:25},
-       {label:"Standard", mod:"Steady pace", sec:35},
-       {label:"Spicy", mod:"Hold the squeeze for 1 second", sec:45}
-     ]},
-    {name:"High plank to low plank",
-     how:"From high plank, lower to elbows one at a time, then return to hands. Keep hips steady.",
-     levels:[
-       {label:"Easy", mod:"Knees down", sec:25},
-       {label:"Standard", mod:"Full plank", sec:35},
-       {label:"Spicy", mod:"Feet close together", sec:45}
-     ]},
-    {name:"Plank lean",
-     how:"High plank. Shift body weight forward over wrists a few centimetres, then return. Stay tight through ribs.",
-     levels:[
-       {label:"Easy", mod:"Small lean", sec:20},
-       {label:"Standard", mod:"Moderate lean", sec:30},
-       {label:"Spicy", mod:"Deep lean, slow", sec:40}
-     ]},
-    {name:"Hip raise march",
-     how:"Glute bridge position. Hold the top and slowly lift one knee at a time without hips dropping.",
-     levels:[
-       {label:"Easy", mod:"Short hold", sec:25},
-       {label:"Standard", mod:"Alternating march", sec:35},
-       {label:"Spicy", mod:"Arms overhead", sec:45}
-     ]},
-    {name:"Toe taps",
-     how:"Tabletop position. Tap one foot to the floor and return without losing lower back contact, then switch.",
-     levels:[
-       {label:"Easy", mod:"Slow taps", sec:25},
-       {label:"Standard", mod:"Steady taps", sec:35},
-       {label:"Spicy", mod:"Add arm reaches", sec:45}
-     ]}
-  ];
-
-  // State for current move and difficulty
-  let current = null;
-  let currentLevelIndex = 1; // 0 easy, 1 standard, 2 spicy
-
-  // Timer state
-  let totalMs = 30000;
-  let leftMs = totalMs;
-  let ticker = null;
-
-  function pickRandom(){
-    initAudio();
-    current = MOVES[Math.floor(Math.random()*MOVES.length)];
-    currentLevelIndex = 1; // default to Standard
-    renderMove();
-    setTimer(current.levels[currentLevelIndex].sec);
-    $('#timerCard').hidden = false;
-    window.scrollTo({top: document.body.scrollTop + 1, behavior:'smooth'});
-  }
-
-  function renderMove(){
-    const m = current;
-    const sec = m.levels[currentLevelIndex].sec;
-    const html = `
-      <div class="row" style="justify-content:space-between;align-items:center">
-        <div>
-          <div class="title">${m.name}</div>
-          <p class="desc">${m.how}</p>
-        </div>
-        <button class="btn ghost" id="next">New exercise</button>
-      </div>
-      <div class="box" style="margin-top:10px">
-        <div class="row" role="tablist" aria-label="Difficulty">
-          ${m.levels.map((lv, i)=>`
-            <button class="chip ${i===currentLevelIndex?'active':''}" data-level="${i}" aria-pressed="${i===currentLevelIndex}">
-              ${lv.label} • <span class="muted">${lv.mod}</span>
-            </button>
-          `).join('')}
-        </div>
-        <p class="muted" style="margin:8px 0 0">Recommended time for this level: <strong>${sec}s</strong></p>
-      </div>
-    `;
-    $('#result').innerHTML = html;
-
-    // Wire up buttons
-    $('#next').onclick = ()=> { stopTimer(); pickRandom(); };
-    document.querySelectorAll('[data-level]').forEach(btn=>{
-      btn.onclick = ()=>{
-        document.querySelectorAll('[data-level]').forEach(b=>b.classList.remove('active'));
-        btn.classList.add('active');
-        currentLevelIndex = Number(btn.getAttribute('data-level'));
-        setTimer(current.levels[currentLevelIndex].sec);
-      };
+  let t = 0;
+  function tick(){
+    ctx.clearRect(0,0,confettiCanvas.width,confettiCanvas.height);
+    pieces.forEach(p=>{
+      p.vy += 0.12; p.x += p.vx; p.y += p.vy; p.a -= 0.01;
+      ctx.globalAlpha = Math.max(0,p.a);
+      ctx.fillStyle = ['#6ee7b7','#60a5fa','#fbbf24'][Math.floor(Math.random()*3)];
+      ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fill();
     });
+    ctx.globalAlpha = 1;
+    t++; if(t<180 && pieces.some(p=>p.a>0)) requestAnimationFrame(tick);
   }
+  tick();
+}
 
-  // Timer helpers
-  function setTimer(seconds){
-    totalMs = Math.max(10, Number(seconds)) * 1000;
-    leftMs = totalMs;
-    updateTime();
-    updateBar();
-  }
-  function startTimer(){
-    initAudio();
-    if(ticker) return;
-    const start = performance.now();
-    let last = start;
-    ticker = setInterval(()=> {
-      const now = performance.now();
-      const dt = now - last; last = now;
-      leftMs -= dt;
-      if(leftMs <= 0){
-        leftMs = 0; updateTime(); updateBar();
-        stopTimer(); beep();
-      }else{
-        updateTime(); updateBar();
-      }
-    }, 100);
-  }
-  function stopTimer(){ if(ticker){ clearInterval(ticker); ticker = null; } }
-  function resetTimer(){ stopTimer(); leftMs = totalMs; updateTime(); updateBar(); }
-  function plus(sec){ totalMs += sec*1000; leftMs += sec*1000; updateTime(); updateBar(); }
-  function minus(sec){
-    totalMs = Math.max(5000, totalMs - sec*1000);
-    leftMs = Math.min(leftMs, totalMs);
-    updateTime(); updateBar();
-  }
-  function updateTime(){
-    const s = Math.ceil(leftMs/1000);
-    const mm = String(Math.floor(s/60)).padStart(2,'0');
-    const ss = String(s%60).padStart(2,'0');
-    $('#time').textContent = `${mm}:${ss}`;
-  }
-  function updateBar(){
-    const p = totalMs === 0 ? 0 : 1 - (leftMs/totalMs);
-    $('#bar').style.width = `${Math.max(0, Math.min(1, p))*100}%`;
-  }
+/* =============== Exercise library (same as yours) =============== */
+const MOVES = [
+  {name:"Dead bug", how:"Lie on your back, arms up, hips and knees at 90. Press your lower back into the floor. Exhale as you reach opposite arm and leg, then return and switch sides.",
+   levels:[{label:"Easy",mod:"Toe taps only",sec:25},{label:"Standard",mod:"Opposite arm and leg",sec:35},{label:"Spicy",mod:"Add 2 second pauses at full reach",sec:45}]},
+  {name:"Hollow hold", how:"Tuck ribs down and curl shoulders just off the floor. Extend only as far as you can keep contact.", levels:[{label:"Easy",mod:"Tuck position",sec:20},{label:"Standard",mod:"One leg long",sec:30},{label:"Spicy",mod:"Full hollow, arms overhead",sec:40}]},
+  {name:"Plank", how:"Elbows under shoulders, body in a straight line. Squeeze glutes and keep ribs down.", levels:[{label:"Easy",mod:"Knees down",sec:25},{label:"Standard",mod:"High or low plank",sec:40},{label:"Spicy",mod:"Narrow feet or weight shift",sec:50}]},
+  {name:"Side plank", how:"Elbow under shoulder, feet stacked. Lift hips and keep a straight line. Push top hip forward.", levels:[{label:"Easy",mod:"Knees bent",sec:20},{label:"Standard",mod:"Feet stacked",sec:30},{label:"Spicy",mod:"Star position or hip dips",sec:40}]},
+  {name:"Reverse crunch", how:"Curl the pelvis to bring knees towards chest. Lower with control. No swing.", levels:[{label:"Easy",mod:"Small range",sec:25},{label:"Standard",mod:"Full range",sec:35},{label:"Spicy",mod:"Straight legs or pause at top",sec:45}]},
+  {name:"Bicycle crunch", how:"Hands light behind head. Lift shoulders and cycle legs. Twist ribs towards opposite knee.", levels:[{label:"Easy",mod:"Small range",sec:25},{label:"Standard",mod:"Full range",sec:35},{label:"Spicy",mod:"Slow tempo, 3 second holds",sec:45}]},
+  {name:"Mountain climbers", how:"High plank. Drive a knee towards chest then switch. Keep hips level.", levels:[{label:"Easy",mod:"Slow pace",sec:25},{label:"Standard",mod:"Steady pace",sec:35},{label:"Spicy",mod:"Cross body to elbow",sec:45}]},
+  {name:"Bird dog", how:"On hands and knees. Reach opposite arm and leg long. Pause to stop wobble.", levels:[{label:"Easy",mod:"Small reach",sec:25},{label:"Standard",mod:"Full reach with 1 second pause",sec:35},{label:"Spicy",mod:"5 second pause or draw a box",sec:45}]},
+  {name:"Glute bridge", how:"Feet hip width. Tilt pelvis then lift hips, ribs down. Squeeze at the top.", levels:[{label:"Easy",mod:"Double leg",sec:30},{label:"Standard",mod:"Marching at top",sec:40},{label:"Spicy",mod:"Single leg",sec:50}]},
+  {name:"Leg lowers", how:"Press lower back down. Lower both legs slowly, then raise.", levels:[{label:"Easy",mod:"Knees a little bent",sec:20},{label:"Standard",mod:"Straight legs to 45°",sec:30},{label:"Spicy",mod:"Lower close to floor then pause",sec:40}]},
+  {name:"Flutter kicks", how:"Lower back pressed down. Alternate small quick kicks just above the floor.", levels:[{label:"Easy",mod:"Hands under hips",sec:25},{label:"Standard",mod:"Arms by sides",sec:35},{label:"Spicy",mod:"Arms overhead",sec:45}]},
+  {name:"Toe reaches", how:"Legs up straight. Reach hands towards toes by curling ribs down. Lower with control.", levels:[{label:"Easy",mod:"Small reach",sec:20},{label:"Standard",mod:"Full reach",sec:30},{label:"Spicy",mod:"Slow tempo with holds",sec:40}]},
+  {name:"Plank shoulder taps", how:"High plank, feet wider. Tap opposite shoulder without rocking.", levels:[{label:"Easy",mod:"Hands on box or sofa",sec:25},{label:"Standard",mod:"Floor taps",sec:35},{label:"Spicy",mod:"Feet close together",sec:45}]},
+  {name:"Plank knee to elbow", how:"From plank, bring knee towards elbow with a small crunch.", levels:[{label:"Easy",mod:"Slow range",sec:25},{label:"Standard",mod:"Steady pace",sec:35},{label:"Spicy",mod:"Hold the squeeze 1 to 2 seconds",sec:45}]},
+  {name:"Bear crawl hold", how:"Knees 2 to 3 cm off floor. Back flat. Breathe.", levels:[{label:"Easy",mod:"Static hold",sec:20},{label:"Standard",mod:"Slow shoulder taps",sec:30},{label:"Spicy",mod:"Opposite hand and foot steps",sec:40}]},
+  {name:"V-sit hold", how:"Balance on sit bones. Lift chest, ribs down, shins parallel.", levels:[{label:"Easy",mod:"Hands on thighs",sec:20},{label:"Standard",mod:"Arms forward",sec:30},{label:"Spicy",mod:"Legs straighter and lower",sec:40}]},
+  {name:"Russian twists", how:"Sit tall, lean back a touch. Rotate ribs side to side.", levels:[{label:"Easy",mod:"Feet down",sec:25},{label:"Standard",mod:"Feet up",sec:35},{label:"Spicy",mod:"Slow tempo with pauses",sec:45}]},
+  {name:"Seated knee tucks", how:"Extend legs away then tuck back in without rounding.", levels:[{label:"Easy",mod:"Small range",sec:25},{label:"Standard",mod:"Full range",sec:35},{label:"Spicy",mod:"Hold straight legs 1 second",sec:45}]},
+  {name:"Jackknife", how:"Arms overhead. Lift legs and reach hands to meet them.", levels:[{label:"Easy",mod:"Bent knees",sec:20},{label:"Standard",mod:"Straight legs",sec:30},{label:"Spicy",mod:"Slow eccentric lower",sec:40}]},
+  {name:"Plank saw", how:"Low plank. Rock forward and back from shoulders.", levels:[{label:"Easy",mod:"Small rocks",sec:25},{label:"Standard",mod:"Bigger range",sec:35},{label:"Spicy",mod:"Feet together, long rocks",sec:45}]},
+  {name:"Side plank hip dips", how:"Side plank. Lower hips a few cm then lift.", levels:[{label:"Easy",mod:"Knees down",sec:20},{label:"Standard",mod:"Feet stacked",sec:30},{label:"Spicy",mod:"Top leg raised",sec:40}]},
+  {name:"Hollow rocks", how:"Hold a tight hollow shape and rock gently.", levels:[{label:"Easy",mod:"Tuck rocks",sec:20},{label:"Standard",mod:"One leg long",sec:30},{label:"Spicy",mod:"Full hollow rocks",sec:40}]},
+  {name:"Superman hold", how:"Face down. Lift arms and legs slightly, squeeze glutes.", levels:[{label:"Easy",mod:"Arms by sides",sec:20},{label:"Standard",mod:"Arms overhead",sec:30},{label:"Spicy",mod:"Swimmer kicks",sec:40}]},
+  {name:"Walkout to plank", how:"Fold, walk hands to plank, brief hold, walk back and stand.", levels:[{label:"Easy",mod:"Short walkout",sec:25},{label:"Standard",mod:"Full walkout",sec:35},{label:"Spicy",mod:"Add a press up",sec:45}]},
+  {name:"Inchworm", how:"Walk hands to plank, small push up if able, then feet in.", levels:[{label:"Easy",mod:"No push up",sec:25},{label:"Standard",mod:"With push up",sec:35},{label:"Spicy",mod:"With shoulder tap",sec:45}]},
+  {name:"Standing knee to elbow", how:"Bring knee to opposite elbow with a small crunch.", levels:[{label:"Easy",mod:"Slow pace",sec:25},{label:"Standard",mod:"Steady pace",sec:35},{label:"Spicy",mod:"Hold 1 second",sec:45}]},
+  {name:"High plank to low plank", how:"Down to elbows one at a time, then return to hands.", levels:[{label:"Easy",mod:"Knees down",sec:25},{label:"Standard",mod:"Full plank",sec:35},{label:"Spicy",mod:"Feet close together",sec:45}]},
+  {name:"Plank lean", how:"Shift body forward over wrists a few centimetres, then back.", levels:[{label:"Easy",mod:"Small lean",sec:20},{label:"Standard",mod:"Moderate",sec:30},{label:"Spicy",mod:"Deep lean, slow",sec:40}]},
+  {name:"Hip raise march", how:"Bridge top hold. Lift one knee at a time, hips steady.", levels:[{label:"Easy",mod:"Short hold",sec:25},{label:"Standard",mod:"Alternating march",sec:35},{label:"Spicy",mod:"Arms overhead",sec:45}]},
+  {name:"Toe taps", how:"Tabletop. Tap one foot down, return, then switch.", levels:[{label:"Easy",mod:"Slow taps",sec:25},{label:"Standard",mod:"Steady taps",sec:35},{label:"Spicy",mod:"Add arm reaches",sec:45}]}
+];
 
-  // Controls
-  $('#roll').addEventListener('click', pickRandom, {passive:true});
-  $('#start').addEventListener('click', startTimer, {passive:true});
-  $('#pause').addEventListener('click', stopTimer, {passive:true});
-  $('#reset').addEventListener('click', resetTimer, {passive:true});
-  $('#plus10').addEventListener('click', ()=> plus(10), {passive:true});
-  $('#minus10').addEventListener('click', ()=> minus(10), {passive:true});
+/* =============== Game state =============== */
+const DEF = {
+  lvl:1, xp:0, coins:0, streak:0, lastDay:"",
+  xpToNext:100, goalMin:8,
+  doneSecByDay:{},
+  ownedThemes:{"default":true}, theme:"default",
+  ach:{}, // map code -> true
+  bingo: { tiles:[], done:{} },
+};
+let GS = Object.assign({}, DEF, store.get());
+if(!GS.doneSecByDay) GS.doneSecByDay = {};
+renderHeader();
+
+/* =============== Modes and controls =============== */
+let luckyDip = false;
+let fixedLevel = 0; // 0 easy default to match chip active
+let current = null, currentLevelIndex = 1;
+let totalMs = 30000, leftMs = 30000, ticker=null;
+let combo = 1, inSession = false, sessionLeft = 0;
+
+function pickRandom(){
+  initAudio();
+  const idx = Math.floor(Math.random()*MOVES.length);
+  current = MOVES[idx];
+  currentLevelIndex = luckyDip ? Math.floor(Math.random()*3) : (fixedLevel===undefined?1:fixedLevel);
+  renderMove();
+  setTimer(current.levels[currentLevelIndex].sec);
+  $('#timerCard').hidden = false;
+  window.scrollTo({top: document.body.scrollTop + 1, behavior:'smooth'});
+}
+function renderMove(){
+  const m = current;
+  const sec = m.levels[currentLevelIndex].sec;
+  const html = `
+    <div class="row" style="justify-content:space-between;align-items:center">
+      <div>
+        <div class="title">${m.name}</div>
+        <p class="desc">${m.how}</p>
+      </div>
+      <button class="btn ghost" id="next">New exercise</button>
+    </div>
+    <div class="box" style="margin-top:10px">
+      <div class="row" role="tablist" aria-label="Difficulty">
+        ${m.levels.map((lv, i)=>`
+          <button class="chip ${i===currentLevelIndex?'active':''}" data-level="${i}" aria-pressed="${i===currentLevelIndex}">
+            ${lv.label} • <span class="muted">${lv.mod}</span>
+          </button>
+        `).join('')}
+      </div>
+      <p class="muted" style="margin:8px 0 0">Recommended time for this level: <strong>${sec}s</strong></p>
+    </div>
+  `;
+  $('#result').innerHTML = html;
+
+  $('#next').onclick = ()=> { stopTimer(); pickRandom(); };
+  $$('[data-level]').forEach(btn=>{
+    btn.onclick = ()=>{
+      $$('[data-level]').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      currentLevelIndex = Number(btn.getAttribute('data-level'));
+      setTimer(current.levels[currentLevelIndex].sec);
+    };
+  });
+}
+
+/* =============== Timer =============== */
+function setTimer(seconds){
+  totalMs = Math.max(10, Number(seconds)) * 1000;
+  leftMs = totalMs;
+  updateTime(); updateBar();
+}
+function startTimer(){
+  initAudio();
+  if(ticker) return;
+  const start = performance.now(); let last = start;
+  ticker = setInterval(()=> {
+    const now = performance.now(); const dt = now - last; last = now;
+    leftMs -= dt;
+    if(leftMs <= 0){
+      leftMs = 0; updateTime(); updateBar();
+      stopTimer(); finishExercise();
+    }else{ updateTime(); updateBar(); }
+  }, 100);
+}
+function stopTimer(){ if(ticker){ clearInterval(ticker); ticker = null; } }
+function resetTimer(){ stopTimer(); leftMs = totalMs; updateTime(); updateBar(); }
+function plus(sec){ totalMs += sec*1000; leftMs += sec*1000; updateTime(); updateBar(); }
+function minus(sec){
+  totalMs = Math.max(5000, totalMs - sec*1000);
+  leftMs = Math.min(leftMs, totalMs);
+  updateTime(); updateBar();
+}
+function updateTime(){
+  const s = Math.ceil(leftMs/1000);
+  const mm = String(Math.floor(s/60)).padStart(2,'0');
+  const ss = String(s%60).padStart(2,'0');
+  $('#time').textContent = `${mm}:${ss}`;
+}
+function updateBar(){
+  const p = totalMs === 0 ? 0 : 1 - (leftMs/totalMs);
+  $('#bar').style.width = `${Math.max(0, Math.min(1, p))*100}%`;
+}
+
+/* =============== Rewards =============== */
+function finishExercise(){
+  beep(); vibrate(60);
+
+  // XP based on seconds and difficulty
+  const sec = Math.round(totalMs/1000);
+  const diffMul = [1, 1.4, 1.8][currentLevelIndex];
+  const baseXP = Math.round((sec/10) * diffMul);
+  combo = Math.min(5, combo + 1);
+  const xp = Math.round(baseXP * (1 + (combo-1)*0.15));
+  const coins = Math.max(1, Math.round(xp/3));
+
+  addXP(xp); addCoins(coins);
+  addDailySec(sec);
+  addStreak();
+  unlockBingo(current?.name);
+
+  toast(`+${xp} XP • +${coins} 🪙 • Combo x${combo}`);
+  burstConfetti();
+
+  checkAchievements({sec, spicy: currentLevelIndex===2, move: current?.name});
+
+  // Session flow
+  if(inSession){
+    sessionLeft--;
+    if(sessionLeft>0){
+      setTimeout(()=>{ pickRandom(); }, 500);
+    }else{
+      inSession = false; combo = 1;
+      toast('Session complete. Nice work.');
+    }
+  }
+}
+
+/* XP and level */
+function xpNeededFor(level){
+  return 100 + Math.floor((level-1)*60); // gentle ramp
+}
+function addXP(n){
+  GS.xp += n;
+  while(GS.xp >= GS.xpToNext){
+    GS.xp -= GS.xpToNext;
+    GS.lvl += 1;
+    GS.xpToNext = xpNeededFor(GS.lvl);
+    toast(`Level up to ${GS.lvl}`);
+  }
+  store.patch({xp:GS.xp,lvl:GS.lvl,xpToNext:GS.xpToNext});
+  renderHeader();
+}
+function addCoins(n){ GS.coins += n; store.patch({coins:GS.coins}); renderHeader(); }
+function addDailySec(sec){
+  const key = todayStr();
+  GS.doneSecByDay[key] = (GS.doneSecByDay[key]||0) + sec;
+  store.patch({doneSecByDay:GS.doneSecByDay});
+  renderHeader();
+}
+function addStreak(){
+  const d = todayStr();
+  if(GS.lastDay !== d){
+    // If yesterday, keep streak, otherwise reset
+    if(GS.lastDay){
+      const y = new Date(GS.lastDay);
+      const t = new Date(d);
+      const delta = (t - y) / 86400000;
+      if(delta === 1){ GS.streak += 1; }
+      else{ GS.streak = 1; }
+    }else{
+      GS.streak = 1;
+    }
+    GS.lastDay = d;
+    store.patch({streak:GS.streak,lastDay:GS.lastDay});
+    renderHeader();
+  }
+}
+
+/* =============== Bingo =============== */
+function newBingo(){
+  const names = MOVES.map(m=>m.name);
+  const pick = [];
+  while(pick.length<9){
+    const n = names[Math.floor(Math.random()*names.length)];
+    if(!pick.includes(n)) pick.push(n);
+  }
+  GS.bingo = { tiles: pick, done: {} };
+  store.patch({bingo:GS.bingo});
+  renderBingo();
+}
+function renderBingo(){
+  const g = $('#bingoGrid');
+  g.innerHTML = '';
+  GS.bingo.tiles.forEach((name, i)=>{
+    const t = document.createElement('div');
+    t.className = 'tile' + (GS.bingo.done[name]?' done':'');
+    t.textContent = name;
+    g.appendChild(t);
+  });
+}
+function unlockBingo(moveName){
+  if($('#bingoCard').hidden) return;
+  if(GS.bingo.tiles.includes(moveName)){
+    GS.bingo.done[moveName] = true;
+    store.patch({bingo:GS.bingo});
+    renderBingo();
+    if(checkBingoLine()){
+      const bonus = 50;
+      addXP(bonus); addCoins(20);
+      toast(`Bingo line complete. +${bonus} XP`);
+      burstConfetti();
+      newBingo();
+    }
+  }
+}
+function checkBingoLine(){
+  const t = GS.bingo.tiles, d = GS.bingo.done;
+  const lines = [
+    [0,1,2],[3,4,5],[6,7,8], // rows
+    [0,3,6],[1,4,7],[2,5,8], // cols
+    [0,4,8],[2,4,6]          // diag
+  ];
+  return lines.some(line => line.every(i => d[t[i]]));
+}
+
+/* =============== Achievements =============== */
+const ACH = [
+  {code:'first', label:'First timer', test:(h)=>h.count>=1, reward:20, desc:'Finish one timer'},
+  {code:'variety5', label:'Mix it up', test:(h)=>h.unique>=5, reward:30, desc:'Five different moves'},
+  {code:'spicy3', label:'Heat seeker', test:(h)=>h.spicy>=3, reward:40, desc:'Three spicy finishes'},
+  {code:'tenmin', label:'Solid ten', test:(h)=>h.todayMin>=10, reward:40, desc:'Ten minutes in a day'},
+  {code:'streak3', label:'On a roll', test:(h)=>GS.streak>=3, reward:50, desc:'Three day streak'},
+  {code:'level5', label:'Getting serious', test:(h)=>GS.lvl>=5, reward:60, desc:'Reach level 5'}
+];
+let hist = store.get().hist || {count:0, uniqueSet:{}, spicy:0};
+function checkAchievements({sec, spicy, move}){
+  hist.count += 1;
+  hist.uniqueSet[move] = true;
+  if(spicy) hist.spicy += 1;
+  store.patch({hist});
+
+  const todayMin = Math.floor((GS.doneSecByDay[todayStr()]||0)/60);
+  const h = {count: hist.count, unique: Object.keys(hist.uniqueSet).length, spicy: hist.spicy, todayMin};
+  let unlocked = [];
+  ACH.forEach(a=>{
+    if(!GS.ach[a.code] && a.test(h)){
+      GS.ach[a.code] = true;
+      addXP(a.reward); addCoins(10);
+      unlocked.push(a);
+    }
+  });
+  if(unlocked.length){
+    store.patch({ach:GS.ach});
+    showAchievements(unlocked, true);
+  }
+}
+function showAchievements(list = null, fromUnlock = false){
+  const wrap = $('#achList');
+  const all = list || ACH.map(a=>({ ...a, new:false }));
+  const owned = GS.ach || {};
+  const body = `
+    <div class="row" style="flex-wrap:wrap;gap:10px">
+      ${ACH.map(a=>{
+        const got = owned[a.code];
+        return `<span class="badge" title="${a.desc}">${got?'🏅':'⬜️'} ${a.label}${got? ' • +'+a.reward+' XP':''}</span>`;
+      }).join('')}
+    </div>
+    <div class="row" style="justify-content:flex-end;margin-top:12px">
+      <button class="btn" data-close>Close</button>
+    </div>
+  `;
+  wrap.innerHTML = body;
+  $('#ach').showModal();
+  if(fromUnlock) toast('Achievement unlocked');
+}
+
+/* =============== Shop and themes =============== */
+const THEMES = {
+  default:{bg:'#0f1115',card:'#161a22',ink:'#e9ecf1',accent:'#60a5fa',brand:'#6ee7b7'},
+  ocean:{bg:'#0b1220',card:'#102033',ink:'#e7f6ff',accent:'#58a6ff',brand:'#22d3ee'},
+  sunset:{bg:'#1a0f10',card:'#221317',ink:'#fff3eb',accent:'#fb7185',brand:'#fbbf24'},
+  neon:{bg:'#05060a',card:'#0a0c12',ink:'#eafffb',accent:'#a78bfa',brand:'#22c55e'}
+};
+function applyTheme(name){
+  const t = THEMES[name] || THEMES.default;
+  const r = document.documentElement;
+  r.style.setProperty('--bg', t.bg);
+  r.style.setProperty('--card', t.card);
+  r.style.setProperty('--ink', t.ink);
+  r.style.setProperty('--accent', t.accent);
+  r.style.setProperty('--brand', t.brand);
+  GS.theme = name; store.patch({theme:GS.theme});
+}
+function buyTheme(name){
+  if(GS.ownedThemes[name]){ applyTheme(name); toast(`Theme applied: ${name}`); return; }
+  if(GS.coins < 30){ toast('Not enough coins'); return; }
+  GS.coins -= 30; GS.ownedThemes[name] = true; store.patch({coins:GS.coins, ownedThemes:GS.ownedThemes});
+  applyTheme(name); renderHeader(); toast(`Theme unlocked: ${name}`);
+}
+
+/* =============== UI helpers =============== */
+function renderHeader(){
+  $('#lvl').textContent = GS.lvl;
+  $('#xpNum').textContent = GS.xp;
+  $('#xpNeed').textContent = GS.xpToNext;
+  $('#coins').textContent = GS.coins;
+  $('#streak').textContent = GS.streak;
+  const pct = Math.min(100, Math.round(GS.xp/GS.xpToNext*100));
+  $('#xpfill').style.width = pct + '%';
+  $('#goalMin').textContent = GS.goalMin;
+  $('#doneMin').textContent = Math.floor((GS.doneSecByDay[todayStr()]||0)/60);
+}
+function toast(msg){
+  const t = $('#toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=> t.classList.remove('show'), 1600);
+}
+
+/* =============== Bingo setup on load =============== */
+if(!GS.bingo || !GS.bingo.tiles || GS.bingo.tiles.length!==9){ newBingo(); } else { renderBingo(); }
+
+/* =============== Theme on load =============== */
+applyTheme(GS.theme||'default');
+
+/* =============== Controls =============== */
+$('#roll').addEventListener('click', pickRandom, {passive:true});
+$('#start').addEventListener('click', startTimer, {passive:true});
+$('#pause').addEventListener('click', stopTimer, {passive:true});
+$('#reset').addEventListener('click', resetTimer, {passive:true});
+$('#plus10').addEventListener('click', ()=> plus(10), {passive:true});
+$('#minus10').addEventListener('click', ()=> minus(10), {passive:true});
+
+$('#lucky').onclick = (e)=>{ luckyDip = !luckyDip; e.currentTarget.classList.toggle('active', luckyDip); e.currentTarget.setAttribute('aria-pressed', luckyDip); toast(luckyDip?'Lucky dip on':'Lucky dip off'); };
+$$('[data-fixedlevel]').forEach(b=>{
+  b.onclick = ()=>{
+    $$('[data-fixedlevel]').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    fixedLevel = Number(b.getAttribute('data-fixedlevel'));
+  };
+});
+
+$('#sessionBtn').onclick = ()=>{
+  inSession = true; sessionLeft = 6; combo = 1;
+  toast('Session: 6 moves. Go.');
+  pickRandom();
+};
+$('#bingoBtn').onclick = ()=>{
+  const sec = $('#bingoCard'); sec.hidden = !sec.hidden;
+  if(!sec.hidden) renderBingo();
+};
+$('#bingoNew').onclick = ()=> newBingo();
+
+/* =============== Dialogs =============== */
+$('#shopBtn').onclick = ()=> $('#shop').showModal();
+$('#achBtn').onclick = ()=> showAchievements();
+$$('dialog [data-close]').forEach(b=> b.onclick = (e)=> e.target.closest('dialog').close());
+$$('.swatch').forEach(s=>{
+  s.onclick = ()=> buyTheme(s.getAttribute('data-theme'));
+});
+
+/* =============== Share summary (optional small touch) =============== */
+if(navigator.share){
+  const shareBtn = document.createElement('button');
+  shareBtn.className = 'btn link';
+  shareBtn.textContent = 'Share summary';
+  shareBtn.onclick = ()=>{
+    const min = Math.floor((GS.doneSecByDay[todayStr()]||0)/60);
+    const text = `Core session done: ${min} min • Level ${GS.lvl} • Streak ${GS.streak} 🔥`;
+    navigator.share({title:'Core session', text});
+  };
+  document.querySelector('header .row:last-of-type').appendChild(shareBtn);
+}
+
+/* =============== Combo display =============== */
+function updateCombo(){ $('#comboVal').textContent = 'x'+combo; }
+const comboObserver = new MutationObserver(updateCombo);
+comboObserver.observe($('#comboVal'), {characterData:true,childList:true});
+
+/* Initial combo render */
+updateCombo();
 </script>
 </body>
 </html>
