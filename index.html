@@ -178,6 +178,15 @@ canvas#confetti { pointer-events: none; z-index: 0; }
 /* =============== Utilities and storage =============== */
 const $ = s => document.querySelector(s);
 const $$ = s => Array.from(document.querySelectorAll(s));
+
+// Tap helper: fires on touch and click
+function onTap(el, fn){
+  if(!el) return;
+  const handler = e => { e.preventDefault(); fn(e); };
+  el.addEventListener('touchend', handler, {passive:false});
+  el.addEventListener('click', handler, false);
+}
+
 const store = {
   get(){ try{ return JSON.parse(localStorage.getItem('coreGame')||'{}'); }catch{ return {}; } },
   set(data){ localStorage.setItem('coreGame', JSON.stringify(data)); },
@@ -259,7 +268,7 @@ const MOVES = [
   {name:"High plank to low plank", how:"Down to elbows one at a time, then return to hands.", levels:[{label:"Easy",mod:"Knees down",sec:25},{label:"Standard",mod:"Full plank",sec:35},{label:"Spicy",mod:"Feet close together",sec:45}]},
   {name:"Plank lean", how:"Shift body forward over wrists a few centimetres, then back.", levels:[{label:"Easy",mod:"Small lean",sec:20},{label:"Standard",mod:"Moderate",sec:30},{label:"Spicy",mod:"Deep lean, slow",sec:40}]},
   {name:"Hip raise march", how:"Bridge top hold. Lift one knee at a time, hips steady.", levels:[{label:"Easy",mod:"Short hold",sec:25},{label:"Standard",mod:"Alternating march",sec:35},{label:"Spicy",mod:"Arms overhead",sec:45}]},
-  {name:"Toe taps", how:"Tabletop. Tap one foot down, return, then switch.", levels:[{label:"Easy",mod:"Slow taps",sec:25},{label:"Standard",mod:"Steady taps",sec:35},{label:"Spicy",mod:"Add arm reaches",sec:45}]}
+  {name:"Toe taps", how:"Tabletop. Tap one foot down, return, then switch.", levels:[{label:"Easy",mod:"Slow taps",sec:25},{label:"Standard",mod:"Steady taps",sec:35},{label:"Spicy",mod:"Add arm reaches",sec:45}]},
   {name:"Chin tucks", how:"Sit tall. Pull chin straight back (like making a double chin), hold briefly, then release. Keep shoulders relaxed.", levels:[{label:"Easy",mod:"Small range",sec:20},{label:"Standard",mod:"Full tuck hold 2s",sec:30},{label:"Spicy",mod:"Hold 5s each rep",sec:40}]},
   {name:"Jaw opener", how:"Sit or stand tall. Open jaw slowly against gentle resistance from your hand, then close. Keep neck long.", levels:[{label:"Easy",mod:"Partial open/close",sec:20},{label:"Standard",mod:"Full open/close",sec:30},{label:"Spicy",mod:"Add light hand resistance",sec:40}]},
   {name:"Neck lifts", how:"Lie on your back. Gently tuck chin and lift head a few cm, hold, then lower with control. Avoid straining.", levels:[{label:"Easy",mod:"Short holds",sec:15},{label:"Standard",mod:"3s holds",sec:25},{label:"Spicy",mod:"5s holds",sec:35}]},
@@ -600,69 +609,63 @@ if(!GS.bingo || !GS.bingo.tiles || GS.bingo.tiles.length!==9){ newBingo(); } els
 /* =============== Theme on load =============== */
 applyTheme(GS.theme||'default');
 
-// Controls
-onTap($('#roll'), pickRandom);
-onTap($('#start'), startTimer);
-onTap($('#pause'), stopTimer);
-onTap($('#reset'), resetTimer);
-onTap($('#plus10'), ()=> plus(10));
-onTap($('#minus10'), ()=> minus(10));
+/* =============== Bind events once DOM is ready =============== */
+document.addEventListener('DOMContentLoaded', ()=>{
 
-// Lucky dip and level chips
-onTap($('#lucky'), (e)=>{
-  luckyDip = !luckyDip;
-  e.currentTarget.classList.toggle('active', luckyDip);
-  e.currentTarget.setAttribute('aria-pressed', luckyDip);
-  toast(luckyDip ? 'Lucky dip on' : 'Lucky dip off');
-});
-document.querySelectorAll('[data-fixedlevel]').forEach(b=>{
-  onTap(b, ()=>{
-    document.querySelectorAll('[data-fixedlevel]').forEach(x=>x.classList.remove('active'));
-    b.classList.add('active');
-    fixedLevel = Number(b.getAttribute('data-fixedlevel'));
+  // Main controls
+  onTap($('#roll'), pickRandom);
+  onTap($('#start'), startTimer);
+  onTap($('#pause'), stopTimer);
+  onTap($('#reset'), resetTimer);
+  onTap($('#plus10'), ()=> plus(10));
+  onTap($('#minus10'), ()=> minus(10));
+
+  // Lucky dip and difficulty
+  onTap($('#lucky'), (e)=>{
+    luckyDip = !luckyDip;
+    e.currentTarget.classList.toggle('active', luckyDip);
+    e.currentTarget.setAttribute('aria-pressed', luckyDip);
+    toast(luckyDip ? 'Lucky dip on' : 'Lucky dip off');
   });
+  document.querySelectorAll('[data-fixedlevel]').forEach(b=>{
+    onTap(b, ()=>{
+      document.querySelectorAll('[data-fixedlevel]').forEach(x=>x.classList.remove('active'));
+      b.classList.add('active');
+      fixedLevel = Number(b.getAttribute('data-fixedlevel'));
+    });
+  });
+
+  // Session and Bingo
+  onTap($('#sessionBtn'), ()=>{ inSession = true; sessionLeft = 6; combo = 1; toast('Session: 6 moves. Go.'); pickRandom(); });
+  onTap($('#bingoBtn'), ()=>{
+    const sec = $('#bingoCard'); sec.hidden = !sec.hidden;
+    if(!sec.hidden) renderBingo();
+  });
+  onTap($('#bingoNew'), newBingo);
+
+  // Dialogs
+  onTap($('#shopBtn'), ()=> $('#shop').showModal());
+  onTap($('#achBtn'), ()=> showAchievements());
+  document.querySelectorAll('dialog [data-close]').forEach(b=> onTap(b, (e)=> e.target.closest('dialog').close()));
+  document.querySelectorAll('.swatch').forEach(s=> onTap(s, ()=> buyTheme(s.getAttribute('data-theme'))));
+
+  // Optional share
+  if(navigator.share){
+    const shareBtn = document.createElement('button');
+    shareBtn.className = 'btn link';
+    shareBtn.textContent = 'Share summary';
+    shareBtn.onclick = ()=>{
+      const min = Math.floor((GS.doneSecByDay[todayStr()]||0)/60);
+      const text = `Core session done: ${min} min • Level ${GS.lvl} • Streak ${GS.streak} 🔥`;
+      navigator.share({title:'Core session', text});
+    };
+    document.querySelector('header .row:last-of-type').appendChild(shareBtn);
+  }
+
+  // Combo display
+  function updateCombo(){ $('#comboVal').textContent = 'x'+combo; }
+  updateCombo();
 });
-
-// Session, Bingo, dialogs
-onTap($('#sessionBtn'), ()=>{ inSession = true; sessionLeft = 6; combo = 1; toast('Session: 6 moves. Go.'); pickRandom(); });
-onTap($('#bingoBtn'), ()=>{
-  const sec = $('#bingoCard'); sec.hidden = !sec.hidden;
-  if(!sec.hidden) renderBingo();
-});
-onTap($('#bingoNew'), newBingo);
-onTap($('#shopBtn'), ()=> $('#shop').showModal());
-onTap($('#achBtn'), ()=> showAchievements());
-document.querySelectorAll('dialog [data-close]').forEach(b=> onTap(b, (e)=> e.target.closest('dialog').close()));
-document.querySelectorAll('.swatch').forEach(s=> onTap(s, ()=> buyTheme(s.getAttribute('data-theme'))));
-
-/* =============== Dialogs =============== */
-$('#shopBtn').onclick = ()=> $('#shop').showModal();
-$('#achBtn').onclick = ()=> showAchievements();
-$$('dialog [data-close]').forEach(b=> b.onclick = (e)=> e.target.closest('dialog').close());
-$$('.swatch').forEach(s=>{
-  s.onclick = ()=> buyTheme(s.getAttribute('data-theme'));
-});
-
-/* =============== Share summary (optional small touch) =============== */
-if(navigator.share){
-  const shareBtn = document.createElement('button');
-  shareBtn.className = 'btn link';
-  shareBtn.textContent = 'Share summary';
-  shareBtn.onclick = ()=>{
-    const min = Math.floor((GS.doneSecByDay[todayStr()]||0)/60);
-    const text = `Core session done: ${min} min • Level ${GS.lvl} • Streak ${GS.streak} 🔥`;
-    navigator.share({title:'Core session', text});
-  };
-  document.querySelector('header .row:last-of-type').appendChild(shareBtn);
-}
-
-/* =============== Combo display =============== */
-function updateCombo(){ $('#comboVal').textContent = 'x'+combo; }
-const comboObserver = new MutationObserver(updateCombo);
-comboObserver.observe($('#comboVal'), {characterData:true,childList:true});
-
-/* Initial combo render */
-updateCombo();
 </script>
 </body>
 </html>
