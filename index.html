@@ -14,6 +14,12 @@
   html,body{height:100%}
   body{margin:0;background:var(--bg);color:var(--ink);
        font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial}
+  /* Ensure interactive bits accept taps */
+.card, header, .btn, .chip { pointer-events: auto; }
+
+/* Just in case the confetti canvas is sitting above */
+canvas#confetti { pointer-events: none; z-index: 0; }
+.wrap, header, main, footer { position: relative; z-index: 1; }
   .wrap{max-width:860px;margin:0 auto;padding:20px}
   h1{font-size:1.4rem;margin:0 0 10px}
   .card{background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
