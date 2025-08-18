@@ -54,7 +54,26 @@
     </div>
     <button id="roll" class="btn primary">Give me an exercise</button>
   </header>
-
+<section class="card" id="modes" style="margin-top:12px">
+  <div class="row" style="align-items:center;justify-content:space-between">
+    <div>
+      <div class="title">Quick modes</div>
+      <p class="muted" style="margin:0">Pick a way to play. You can still tap “Give me an exercise” any time.</p>
+    </div>
+    <div class="row" style="flex-wrap:nowrap">
+      <button class="btn" id="mode-single">Single</button>
+      <button class="btn" id="mode-combo">Combo ×3</button>
+      <button class="btn" id="mode-emom">EMOM 5</button>
+      <button class="btn" id="mode-amrap">AMRAP 5</button>
+    </div>
+  </div>
+  <div class="row" style="margin-top:8px;align-items:center">
+    <label class="chip"><input id="toggle-voice" type="checkbox" style="accent-color:#60a5fa;margin-right:6px"> Voice cues</label>
+    <label class="chip"><input id="toggle-penalty" type="checkbox" style="accent-color:#60a5fa;margin-right:6px"> Penalty 10s plank</label>
+    <label class="chip"><input id="toggle-spice" type="checkbox" style="accent-color:#60a5fa;margin-right:6px"> 20% spicier</label>
+  </div>
+  <p class="muted" id="streakLine" style="margin:8px 0 0">Streak: 0 days • Rounds today: 0</p>
+</section>
   <main class="stack" style="margin-top:12px">
     <section id="result" class="card" aria-live="polite">
       <p class="muted" style="margin:0">Tap the button above to start.</p>
