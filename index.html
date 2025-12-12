@@ -5,413 +5,648 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="theme-color" content="#000000">
-    <title>Abs & Core Recomp</title>
+    <meta name="theme-color" content="#09090b">
+    <title>Skinny Fat Solution v22</title>
     
-    <!-- React & ReactDOM -->
+    <!-- React & Tailwind -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-    
-    <!-- Babel -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     
     <style>
-        body { 
-            background-color: #000; 
-            color: white; 
-            -webkit-tap-highlight-color: transparent; 
-            overscroll-behavior-y: none;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-        }
+        body { background-color: #000000; color: #e4e4e7; -webkit-tap-highlight-color: transparent; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; padding-bottom: env(safe-area-inset-bottom); user-select: none; }
         ::-webkit-scrollbar { width: 0px; background: transparent; }
-        .safe-area-top { padding-top: env(safe-area-inset-top); }
-        .safe-area-bottom { padding-bottom: env(safe-area-inset-bottom); }
+        .safe-top { padding-top: max(16px, env(safe-area-inset-top)); }
+        .glass-panel { background: #18181b; border: 1px solid #27272a; border-radius: 20px; }
+        .btn-active:active { transform: scale(0.98); opacity: 0.9; }
+        @keyframes fadeUp { from { transform: translateY(10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .anim-entry { animation: fadeUp 0.2s cubic-bezier(0.16, 1, 0.3, 1); }
+        .modal-overlay { background: rgba(0,0,0,0.85); backdrop-filter: blur(4px); }
         
-        /* Animations */
-        @keyframes pulse-slow { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
-        .animate-pulse-slow { animation: pulse-slow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        /* Inputs */
+        input[type=range] { -webkit-appearance: none; background: transparent; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 28px; width: 28px; border-radius: 50%; background: #fff; margin-top: -12px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; background: #3f3f46; border-radius: 2px; }
+        input, select { font-size: 16px !important; background-color: #18181b; border-color: #3f3f46; color: white; }
     </style>
 </head>
 <body>
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect, useRef } = React;
+        const { useState, useEffect, useMemo, useRef, useCallback } = React;
 
-        // --- ICON SYSTEM ---
-        // We define all icons here to prevent the "Black Screen" crash
-        const Icon = ({ path, className }) => (
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>{path}</svg>
-        );
-
+        // --- ICONS ---
+        const Icon = ({ path, className }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>{path}</svg>;
         const Icons = {
-            Flame: (p) => <Icon {...p} path={<><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></>} />,
-            Trophy: (p) => <Icon {...p} path={<><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M9.78 21.6a9 9 0 1 0 4.44 0"/><path d="M12 2v6"/></>} />,
-            Dumbbell: (p) => <Icon {...p} path={<><path d="m6.5 6.5 11 11"/><path d="m21 21-1-1"/><path d="m3 3 1 1"/><path d="m18 22 4-4"/><path d="m2 6 4-4"/><path d="m3 10 7-7"/><path d="m14 21 7-7"/></>} />,
-            TrendingUp: (p) => <Icon {...p} path={<><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></>} />,
+            Brain: (p) => <Icon {...p} path={<path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 4.44-4Z"/>} />,
+            Check: (p) => <Icon {...p} path={<polyline points="20 6 9 17 4 12"/>} />,
             Utensils: (p) => <Icon {...p} path={<><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/></>} />,
+            Moon: (p) => <Icon {...p} path={<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>} />,
+            Dumbbell: (p) => <Icon {...p} path={<><path d="m6.5 6.5 11 11"/><path d="m21 21-1-1"/><path d="m3 3 1 1"/><path d="m18 22 4-4"/><path d="m2 6 4-4"/><path d="m3 10 7-7"/><path d="m14 21 7-7"/></>} />,
             Play: (p) => <Icon {...p} path={<polygon points="5 3 19 12 5 21 5 3"/>} />,
             Pause: (p) => <Icon {...p} path={<><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></>} />,
-            ChevronRight: (p) => <Icon {...p} path={<polyline points="9 18 15 12 9 6"/>} />,
-            CheckCircle2: (p) => <Icon {...p} path={<><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/></>} />,
+            Square: (p) => <Icon {...p} path={<rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>} />,
             X: (p) => <Icon {...p} path={<><path d="M18 6 6 18"/><path d="m6 6 12 12"/></>} />,
             Footprints: (p) => <Icon {...p} path={<><path d="M4 16v-2.38C4 11.5 2.97 10.5 3 8c.03-2.72 1.49-6 4.5-6C9.37 2 11 3.8 11 8c0 1.25-.51 2.4-1.5 3.38-1 1-1.5 2.12-1.5 3.62V15s1 0 1 1-1 1-1 1H4c-1 0-1-1-1-1z"/><path d="M20 20v-2.38c0-2.12 1.03-3.12 1-5.62-.03-2.72-1.49-6-4.5-6C14.63 6 13 7.8 13 12c0 1.25.51 2.4 1.5 3.38 1 1 1.5 2.12 1.5 3.62V19s-1 0-1 1 1 1 1 1h4c1 0 1-1 1-1z"/></>} />,
-            Moon: (p) => <Icon {...p} path={<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>} />,
-            Zap: (p) => <Icon {...p} path={<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>} />,
-            BarChart3: (p) => <Icon {...p} path={<><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></>} />,
-            LayoutDashboard: (p) => <Icon {...p} path={<><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></>} />,
-            Layers: (p) => <Icon {...p} path={<><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></>} />,
-            Droplets: (p) => <Icon {...p} path={<><path d="M7 16.3c2.2 0 4-1.83 4-4.05 0-1.16-.57-2.26-1.71-3.19S7.29 6.75 7 5.3c-.29 1.45-1.14 2.84-2.29 3.76S3 11.1 3 12.25c0 2.22 1.8 4.05 4 4.05z"/><path d="M12.56 6.6A10.97 10.97 0 0 0 14 3.02c.5 2.5 2 4.9 4 6.5s3 3.5 3 5.5a6.98 6.98 0 0 1-11.91 4.97"/></>} />,
-            Settings: (p) => <Icon {...p} path={<><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.74v-.47a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></>} />,
-            Scale: (p) => <Icon {...p} path={<><path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1z"/><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1z"/><path d="M7 21h10"/><path d="M12 3v18"/><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/></>} />,
-            RotateCcw: (p) => <Icon {...p} path={<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>} />,
-            Ruler: (p) => <Icon {...p} path={<><path d="M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.41 2.41 0 0 1 0-3.4l2.6-2.6a2.41 2.41 0 0 1 3.4 0Z"/><path d="m14.5 12.5 2-2"/><path d="m11.5 9.5 2-2"/><path d="m8.5 6.5 2-2"/><path d="m17.5 15.5 2-2"/></>} />,
-            Activity: (p) => <Icon {...p} path={<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>} />,
-            Star: (p) => <Icon {...p} path={<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>} />,
-            Pill: (p) => <Icon {...p} path={<><path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"/><path d="m8.5 8.5 7 7"/></>} />,
-            Sofa: (p) => <Icon {...p} path={<><path d="M20 9V7a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v2"/><path d="M2 11v5a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-5a2 2 0 0 0-4 0v2H6v-2a2 2 0 0 0-4 0Z"/><path d="M4 11V9"/><path d="M20 11V9"/></>} />,
-            ClipboardCheck: (p) => <Icon {...p} path={<><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="m9 14 2 2 4-4"/></>} />,
-            TrendingDown: (p) => <Icon {...p} path={<polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/>} />,
-            AlertTriangle: (p) => <Icon {...p} path={<><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></>} />,
-            PartyPopper: (p) => <Icon {...p} path={<><path d="M5.8 11.3 2 22l10.7-3.79"/><path d="M4 3h.01"/><path d="M22 8h.01"/><path d="M15 2h.01"/><path d="M22 20h.01"/><path d="m22 2-2.24.75a2.9 2.9 0 0 0-1.96 3.12v0c.1.86-.57 1.63-1.45 1.63h-.38c-.86 0-1.6.6-1.76 1.44L14 10"/><path d="m22 13-.82-.33c-.86-.34-1.82.2-1.98 1.11v0c-.11.7-.72 1.22-1.43 1.22H17"/><path d="m11 2 .33.82c.34.86-.2 1.82-1.11 1.98v0C9.52 4.9 9 5.52 9 6.23V7"/><path d="M11 13c1.93 1.93 2.83 4.17 2 5-.83.83-3.07-.07-5-2-1.93-1.93-2.83-4.17-2-5 .83-.83 3.07.07 5 2Z"/></>} />,
-            Brain: (p) => <Icon {...p} path={<><path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z"/><path d="M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z"/><path d="M15 13a4.5 4.5 0 0 1-3-4 4.5 4.5 0 0 1-3 4"/><path d="M17.599 6.5a3 3 0 0 0 .399-1.375"/><path d="M6.003 5.125A3 3 0 0 0 6.401 6.5"/><path d="M3.477 10.896a4 4 0 0 1 .585-.396"/><path d="M19.938 10.5a4 4 0 0 1 .585.396"/><path d="M6 18a4 4 0 0 1-1.97-3.284"/><path d="M17.97 14.716A4 4 0 0 1 16 18"/></>} />,
-            Shield: (p) => <Icon {...p} path={<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/>} />,
+            Trophy: (p) => <Icon {...p} path={<><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></>} />,
             Info: (p) => <Icon {...p} path={<><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></>} />,
-            HelpCircle: (p) => <Icon {...p} path={<><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></>} />,
-            ChefHat: (p) => <Icon {...p} path={<><path d="M6 13.87A4 4 0 0 1 7.41 6a5.11 5.11 0 0 1 1.05-1.54 5 5 0 0 1 9.08 0A5.11 5.11 0 0 1 18.59 6 4 4 0 0 1 18 13.87V21H6Z"/><line x1="6" x2="18" y1="17" y2="17"/></>} />,
-            Download: (p) => <Icon {...p} path={<><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></>} />,
-            Upload: (p) => <Icon {...p} path={<><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></>} />,
-            RefreshCw: (p) => <Icon {...p} path={<><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></>} />,
-            Wind: (p) => <Icon {...p} path={<><path d="M17.7 7.7a2.5 2.5 0 1 1 1.8 4.3H2"/><path d="M9.6 4.6A2 2 0 1 1 11 8H2"/><path d="M12.6 19.4A2 2 0 1 0 14 16H2"/></>} />,
-            
-            // EXERCISE VISUALS
-            Pushup: () => <svg viewBox="0 0 100 100" className="w-24 h-24 text-blue-500 fill-current opacity-90 mx-auto animate-pulse-slow"><circle cx="85" cy="25" r="5" /><path d="M85 30 L70 45 L30 45 L10 60" stroke="currentColor" strokeWidth="3" fill="none" /><path d="M70 45 L70 55 L90 55" stroke="currentColor" strokeWidth="3" fill="none" /><rect x="5" y="60" width="90" height="2" fill="currentColor" opacity="0.3" /></svg>,
-            Squat: () => <svg viewBox="0 0 100 100" className="w-24 h-24 text-blue-500 fill-current opacity-90 mx-auto animate-pulse-slow"><circle cx="50" cy="20" r="5" /><path d="M50 25 L50 45 L30 65 L30 90" stroke="currentColor" strokeWidth="3" fill="none" /><path d="M50 45 L70 65 L70 90" stroke="currentColor" strokeWidth="3" fill="none" /><rect x="20" y="90" width="60" height="2" fill="currentColor" opacity="0.3" /></svg>,
-            Plank: () => <svg viewBox="0 0 100 100" className="w-24 h-24 text-blue-500 fill-current opacity-90 mx-auto animate-pulse-slow"><circle cx="80" cy="45" r="5" /><path d="M80 50 L20 50" stroke="currentColor" strokeWidth="3" fill="none" /><path d="M80 50 L75 60 L85 60" stroke="currentColor" strokeWidth="3" fill="none" /><path d="M20 50 L20 60" stroke="currentColor" strokeWidth="3" fill="none" /><rect x="10" y="60" width="80" height="2" fill="currentColor" opacity="0.3" /></svg>,
-            Generic: () => <svg viewBox="0 0 100 100" className="w-24 h-24 text-blue-500 fill-current opacity-90 mx-auto animate-pulse-slow"><circle cx="50" cy="50" r="40" stroke="currentColor" strokeWidth="2" fill="none"/><circle cx="50" cy="50" r="20" fill="currentColor" opacity="0.5"/></svg>
+            Pill: (p) => <Icon {...p} path={<><path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"/><path d="m8.5 8.5 7 7"/></>} />,
+            Settings: (p) => <Icon {...p} path={<path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.74v-.47a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/>} />,
+            Flame: (p) => <Icon {...p} path={<path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>} />,
+            Refresh: (p) => <Icon {...p} path={<path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>} />,
+            Shield: (p) => <Icon {...p} path={<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>} />,
+            Minus: (p) => <Icon {...p} path={<line x1="5" y1="12" x2="19" y2="12"/>} />,
+            Plus: (p) => <Icon {...p} path={<><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></>} />,
+            Download: (p) => <Icon {...p} path={<><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></>} />,
+            Upload: (p) => <Icon {...p} path={<><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></>} />,
+            Help: (p) => <Icon {...p} path={<><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></>} />,
         };
 
-        const AbsRecompLegacy = () => {
-            const [appData, setAppData] = useState({
-                userProfile: { name: '', weight: '', height: '', age: '', gender: 'male', onboarded: false },
-                exerciseHistory: {}, measurements: [],
-                dailyLog: { date: null, protein: 0, calories: 0, sleep: 0, steps: false, water: 0, creatine: false, isRestDay: false },
-                workoutStreak: 0, habitStreak: 0, totalWorkouts: 0, perfectDays: 0, phase: 1, completedWorkouts: [], settings: { sound: true }
+        // --- LADDERS & LOGIC ---
+        const LADDERS = {
+            Squat: [
+                { name: 'Split Squat (Supported)', range: [8,10], cues: ['Hold wall', 'Control down'], eq: 'bw' },
+                { name: 'Split Squat (Free)', range: [8,12], cues: ['Torso forward', 'Drive front heel'], eq: 'bw' },
+                { name: 'Goblet Squat', range: [10,15], cues: ['Weight at chest', 'Elbows inside knees'], eq: 'load' },
+                { name: 'Weighted Split Squat', range: [8,12], cues: ['Load front leg', 'Control down'], eq: 'load' }
+            ],
+            Push: [
+                { name: 'Incline Push-up', range: [10,15], cues: ['Hands on bench', 'Core tight'], eq: 'bw' },
+                { name: 'Push-up', range: [8,12], cues: ['Elbows 45°', 'No sagging'], eq: 'bw' },
+                { name: 'Push-up (Tempo)', range: [8,10], cues: ['3s down', 'Explode up'], eq: 'bw' },
+                { name: 'Band/Weighted Push-up', range: [8,12], cues: ['Band behind back', 'Full ROM'], eq: 'load' }
+            ],
+            Hinge: [
+                { name: 'Glute Bridge', range: [15,20], cues: ['Squeeze glutes top', 'Chin tucked'], eq: 'bw' },
+                { name: 'Single-Leg RDL (Supported)', range: [8,12], cues: ['Hold wall', 'Hinge hip back'], eq: 'bw' },
+                { name: 'Band Good Morning', range: [12,15], cues: ['Stand on band', 'Band neck', 'Hinge'], eq: 'bands' },
+                { name: 'Single-Leg RDL (Weighted)', range: [8,12], cues: ['Weight in opposite hand', 'Flat back'], eq: 'load' }
+            ],
+            Pull: [
+                { name: 'Door Row', range: [12,15], cues: ['Towel on knob', 'Body straight'], eq: 'bw' },
+                { name: 'Band Row (Seated)', range: [15,20], cues: ['Band feet', 'Shoulders down'], eq: 'bands' },
+                { name: 'DB Row', range: [10,15], cues: ['Hand on bench', 'Pull to pocket'], eq: 'db' },
+                { name: 'Pull-up Negative', range: [3,5], cues: ['Jump up', 'Lower 5s'], eq: 'bar' }
+            ],
+            Overhead: [
+                { name: 'Pike Hold', range: [30,45], cues: ['Hips high', 'Push floor away'], unit: 'time', eq: 'bw' },
+                { name: 'Pike Push-up', range: [5,8], cues: ['Head forward', 'Elbows in'], eq: 'bw' },
+                { name: 'Band Overhead Press', range: [10,15], cues: ['Stand on band', 'Ribs down'], eq: 'bands' },
+                { name: 'DB Overhead Press', range: [8,12], cues: ['Press straight up', 'No arching'], eq: 'db' }
+            ],
+            Core: [
+                { name: 'Dead Bug', range: [10,16], cues: ['Low back glued', 'Slow tempo'], eq: 'bw' },
+                { name: 'Plank', range: [45,60], unit: 'time', cues: ['Squeeze glutes', 'Pull elbows down'], eq: 'bw' },
+                { name: 'Leg Lower', range: [8,12], cues: ['Control lowering', 'No swinging'], eq: 'bw' }
+            ]
+        };
+
+        const WARMUP = [
+            { name: 'Band Pull-Aparts', range: [15,20], cues: ['Fix posture', 'Squeeze rear delts'] },
+            { name: 'Floor Y-T-W', range: [10,15], cues: ['Thumbs up', 'Shoulder health'] }
+        ];
+
+        const getFinisher = (eq=[]) => {
+            if (eq.includes('dumbbells')) {
+                return [
+                    { name: 'DB Lateral Raise', range: [12,20], cues: ['Slight lean', 'Control down'], eq: 'db', isFinisher: true },
+                    { name: 'DB Curl', range: [12,20], cues: ['No swinging', 'Full squeeze'], eq: 'db', isFinisher: true },
+                ];
+            }
+            if (eq.includes('bands')) {
+                return [
+                    { name: 'Band Lateral Raise', range: [15,25], cues: ['Thumbs slightly up', 'Slow negative'], eq: 'bands', isFinisher: true },
+                    { name: 'Band Curl', range: [15,25], cues: ['Elbows pinned', 'Full squeeze'], eq: 'bands', isFinisher: true },
+                ];
+            }
+            return [
+                { name: 'Pike Push-up (Pump)', range: [8,15], cues: ['Short rest', 'Stop before failure'], eq: 'bw', isFinisher: true },
+                { name: 'Diamond Push-up', range: [8,15], cues: ['Elbows in', 'Full lockout'], eq: 'bw', isFinisher: true },
+            ];
+        };
+
+        const getTargets = (data) => {
+            const w = parseFloat(data.user.weight || 70);
+            const h = parseFloat(data.user.height || 175);
+            const age = parseInt(data.user.age || 30);
+            const isMale = data.user.gender === 'male';
+            let bmr = (10 * w) + (6.25 * h) - (5 * age) + (isMale ? 5 : -161);
+            
+            // Manual overrides tdee calc
+            let tdee = data.user.manualCalories ? parseFloat(data.user.manualCalories) : (bmr * 1.55 + (data.user.calAdjustment || 0));
+
+            let calTarget = Math.round(tdee);
+            let protTarget = data.user.manualProtein ? parseFloat(data.user.manualProtein) : (w * 1.8);
+            
+            // Range logic (respecting manual tdee)
+            let minCals = Math.round(tdee - 200);
+            let maxCals = Math.round(tdee + 200);
+
+            if (!data.user.manualCalories) {
+                if (data.user.mode === 'cut') {
+                    calTarget = Math.round(tdee * 0.85); 
+                    protTarget = w * 2.2; 
+                    minCals = Math.round(calTarget - 200); maxCals = Math.round(calTarget + 200);
+                    if (minCals < (isMale ? 1500 : 1200)) minCals = isMale ? 1500 : 1200; 
+                } else if (data.user.mode === 'build') {
+                    calTarget = Math.round(tdee * 1.05); 
+                    protTarget = w * 2.0;
+                    minCals = Math.round(calTarget - 200); maxCals = Math.round(calTarget + 300);
+                }
+            }
+
+            return { calories: calTarget, calMin: minCals, calMax: maxCals, protein: Math.round(protTarget), steps: 8000 };
+        };
+
+        const getRoutine = (data, isExpress = false) => {
+            const workoutsDone = data.status.workoutsCompleted || 0;
+            const isRoutineA = workoutsDone % 2 === 0;
+            const preferences = data.user.preferences || {};
+            const eq = data.user.equipment || [];
+            
+            const getEx = (baseId) => { /* Helper if used */ }; // Simplified below
+
+            let pattern = [];
+            if (data.user.freq === 4) {
+                 // 4x Split: Upper / Lower
+                 const split = workoutsDone % 4; // 0:Upper, 1:Lower, 2:Upper, 3:Lower
+                 if (split === 0 || split === 2) pattern = ['Push', 'Pull', 'Overhead', 'Core']; 
+                 else pattern = ['Squat', 'Hinge', 'Squat', 'Core']; 
+            } else {
+                 // 3x Full Body A/B
+                 pattern = isRoutineA ? ['Squat', 'Push', 'Hinge', 'Overhead', 'Core'] : ['Hinge', 'Pull', 'Squat', 'Push', 'Core'];
+                 // NOTE: Simplified A/B for robustness. A: Quad/Push, B: Hinge/Pull
+                 if(isRoutineA) pattern = ['Squat', 'Push', 'Hinge', 'Core'];
+                 else pattern = ['Pull', 'Overhead', 'Squat', 'Core'];
+            }
+
+            // Smart Warmup
+            const hasBands = eq.includes('bands');
+            const warmup = hasBands 
+                ? { name: 'Band Pull-Aparts', range: [15,20], cues: ['Fix posture', 'Squeeze rear delts'], isWarmup: true }
+                : { name: 'Floor Y-T-W', range: [10,15], cues: ['Thumbs up', 'Shoulder health'], isWarmup: true };
+
+            const mainMoves = pattern.map(fam => {
+                const ladder = LADDERS[fam];
+                const prog = data.progression[fam] || { level: 0 };
+                
+                // Filter ladder to user equipment
+                let available = ladder.filter(e => e.eq === 'bw' || eq.includes(e.eq) || (e.eq==='load' && (eq.includes('dumbbells') || eq.includes('bands'))));
+                if (available.length === 0) available = ladder.filter(e => e.eq === 'bw');
+                
+                // Cap level
+                const safeLevel = Math.min(prog.level, available.length - 1);
+                const ex = available[safeLevel];
+                
+                return { ...ex, family: fam, availableCount: available.length };
             });
 
-            const [view, setView] = useState('onboarding');
-            const [activeTab, setActiveTab] = useState('train');
+            // Add Finisher
+            const finishers = getFinisher(eq);
+
+            return { name: isRoutineA ? "FULL BODY A" : "FULL BODY B", exercises: [warmup, ...mainMoves, ...finishers], isExpress };
+        };
+
+        // --- COMPONENTS ---
+
+        const Toast = ({ msg, onUndo }) => (
+            <div className="fixed top-6 left-1/2 -translate-x-1/2 bg-white text-black px-6 py-3 rounded-full shadow-2xl z-50 font-bold text-sm anim-entry flex items-center gap-4 border border-gray-200">
+                <div className="flex items-center gap-2"><Icons.Check className="w-4 h-4 text-green-600" /> {msg}</div>
+                {onUndo && <button onClick={onUndo} className="text-xs font-black uppercase tracking-wider text-gray-500 hover:text-black">Undo</button>}
+            </div>
+        );
+
+        const Modal = ({ title, children, onClose }) => (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 modal-overlay" onClick={onClose}>
+                <div className="bg-gray-900 border border-gray-800 p-6 rounded-2xl w-full max-w-sm anim-entry" onClick={e => e.stopPropagation()}>
+                    <div className="flex justify-between items-center mb-4">
+                        <h3 className="text-xl font-bold text-white">{title}</h3>
+                        <button onClick={onClose}><Icons.X className="w-6 h-6 text-gray-500"/></button>
+                    </div>
+                    {children}
+                </div>
+            </div>
+        );
+
+        const Onboarding = ({ data, setData }) => (
+            <div className="min-h-screen flex flex-col justify-center p-6 text-center">
+                <div className="mb-10"><Icons.Trophy className="w-16 h-16 text-yellow-500 mx-auto mb-4" /><h1 className="text-3xl font-black text-white mb-2">FINAL CUT</h1><p className="text-gray-500">Skinny Fat Solution v22</p></div>
+                <div className="space-y-6 text-left">
+                    <div className="grid grid-cols-2 gap-4">
+                        <div><label className="text-xs text-gray-500 uppercase font-bold tracking-widest">Weight (kg)</label><input type="number" value={data.user.weight} className="w-full bg-gray-900 border border-gray-800 rounded-xl p-4 text-white mt-2 font-bold text-xl" onChange={e => setData(p => ({...p, user: {...p.user, weight: e.target.value}}))} /></div>
+                        <div><label className="text-xs text-gray-500 uppercase font-bold tracking-widest">Height (cm)</label><input type="number" value={data.user.height} className="w-full bg-gray-900 border border-gray-800 rounded-xl p-4 text-white mt-2 font-bold text-xl" onChange={e => setData(p => ({...p, user: {...p.user, height: e.target.value}}))} /></div>
+                    </div>
+                    <div><label className="text-xs text-gray-500 uppercase font-bold tracking-widest">Age</label><input type="number" value={data.user.age} className="w-full bg-gray-900 border border-gray-800 rounded-xl p-4 text-white mt-2 font-bold text-xl" onChange={e => setData(p => ({...p, user: {...p.user, age: e.target.value}}))} /></div>
+                    <div>
+                        <label className="text-xs text-gray-500 uppercase font-bold tracking-widest mb-2 block">I Have Access To:</label>
+                        <div className="grid grid-cols-2 gap-2">
+                            {['bands', 'dumbbells', 'pull_bar'].map(eq => (
+                                <button key={eq} onClick={() => { 
+                                    const curr = data.user.equipment || []; 
+                                    const next = curr.includes(eq) ? curr.filter(c => c !== eq) : [...curr, eq]; 
+                                    setData(p => ({...p, user: {...p.user, equipment: next}})); 
+                                }} className={`p-4 rounded-xl text-xs font-bold capitalize transition-all ${data.user.equipment?.includes(eq) ? 'bg-white text-black' : 'bg-gray-900 text-gray-500 border border-gray-800'}`}>
+                                    {eq.replace('_', ' ')}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                    <button onClick={() => setData(p => ({...p, user: {...p.user, supplements: !p.user.supplements}}))} className={`w-full p-4 rounded-xl flex items-center justify-between border ${data.user.supplements ? 'bg-purple-900/20 border-purple-500' : 'bg-gray-900 border-gray-800'}`}><span className="text-sm font-bold text-gray-300">Enable Supplements (Creatine)</span>{data.user.supplements ? <Icons.Check className="w-5 h-5 text-purple-400"/> : <div className="w-5 h-5 rounded-full border border-gray-600"></div>}</button>
+                </div>
+                <button onClick={() => { if(data.user.weight) setData(p => ({...p, user: {...p.user, onboarded: true, startDate: new Date().toISOString(), equipment: data.user.equipment || []}, view: 'dashboard'})) }} className="mt-10 w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-xl text-lg shadow-lg btn-active">Build My Plan</button>
+            </div>
+        );
+
+        const Dashboard = ({ data, setData, showToast }) => {
+            const [tab, setTab] = useState('fuel'); 
+            const [modal, setModal] = useState(null); 
             const [showSettings, setShowSettings] = useState(false);
-            const [showWarmup, setShowWarmup] = useState(false);
-            const [showFinisher, setShowFinisher] = useState(false);
-            const [infoModal, setInfoModal] = useState(null);
-            const [morningReport, setMorningReport] = useState(null);
-            const [showConfetti, setShowConfetti] = useState(false); 
-            const [showMealGuide, setShowMealGuide] = useState(false); 
-
-            // WORKOUT STATE
-            const [activeWorkout, setActiveWorkout] = useState(null);
-            const [exerciseIndex, setExerciseIndex] = useState(0);
-            const [currentSet, setCurrentSet] = useState(1);
-            const [totalSets, setTotalSets] = useState(3);
-            const [timer, setTimer] = useState(0);
-            const [isResting, setIsResting] = useState(false);
-            const [isPaused, setIsPaused] = useState(false);
-            const [showQuit, setShowQuit] = useState(false);
-            const [showTimedInput, setShowTimedInput] = useState(false); 
             
-            // INPUT STATES
-            const [repInput, setRepInput] = useState('');
-            const [rpeInput, setRpeInput] = useState(null); 
-            const [waistInput, setWaistInput] = useState('');
-            const [weightInput, setWeightInput] = useState('');
-            const [neckInput, setNeckInput] = useState('');
-            const [hipInput, setHipInput] = useState('');
-            const timerRef = useRef(null);
+            const daysSinceStart = Math.floor((new Date() - new Date(data.user.startDate)) / (1000 * 60 * 60 * 24));
+            const isRampUp = daysSinceStart < 14;
+            
+            const bw = parseFloat(data.user.weight || 70);
+            let protTarget = Math.round(bw * 1.8); 
+            if (isRampUp) protTarget = Math.round(protTarget * 0.85); 
+            const hitsTarget = Math.ceil(protTarget / 30); 
+            
+            const wins = [
+                data.daily.proteinHits >= (hitsTarget - 1),
+                data.daily.steps >= 6000,
+                data.daily.sleep >= 7,
+                (data.daily.train || data.daily.rest)
+            ].filter(Boolean).length;
+            const ringPct = (wins / (data.user.supplements ? 5 : 4)) * 100;
 
-            // AUTO-SAVE
-            useEffect(() => { if (appData.userProfile.onboarded) localStorage.setItem('recomp-final-v4', JSON.stringify(appData)); }, [appData]);
+            useEffect(() => { if (wins === (data.user.supplements ? 5 : 4) && window.confetti) window.confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } }); }, [wins]);
 
-            // WAKE LOCK
+            const logProtein = (amount) => {
+                const old = data.daily.proteinHits;
+                setData(p => ({...p, daily: {...p.daily, proteinHits: old + amount}}));
+                showToast(amount === 0.5 ? "Half Hit Added" : "Protein Hit Added", () => setData(p => ({...p, daily: {...p.daily, proteinHits: old}})));
+            };
+
+            let actionText = "Hit your protein.";
+            let ActionIcon = Icons.Utensils;
+            if (!data.daily.train && !data.daily.rest) { actionText = "Complete your session."; ActionIcon = Icons.Dumbbell; }
+            else if (data.daily.steps < 6000) { actionText = "Go for a 15m walk."; ActionIcon = Icons.Footprints; }
+            else if (data.daily.sleep < 7 && data.daily.sleep > 0) { actionText = "Sleep priority tonight."; ActionIcon = Icons.Moon; }
+            
+            // Re-render Routine Name for display
+            const routineName = data.status.workoutsCompleted % 2 === 0 ? "FULL BODY A" : "FULL BODY B";
+
+            return (
+                <div className="pb-24 min-h-screen relative">
+                    {showSettings && <Settings data={data} setData={setData} onClose={() => setShowSettings(false)} />}
+                    {modal === 'protein' && <Modal title="What counts as a Hit?" onClose={() => setModal(null)}><ul className="space-y-3 text-sm text-gray-400"><li><strong className="text-white">1 Full Hit (30g+):</strong><br/>1 scoop whey, 1 chicken breast, 3 eggs, 1 can tuna, 1 cup Skyr.</li><li><strong className="text-white">0.5 Hit (15g):</strong><br/>Protein bar, 2 eggs, 300ml protein milk.</li></ul></Modal>}
+                    {modal === 'creatine' && <Modal title="Why Creatine?" onClose={() => setModal(null)}><p className="text-sm text-gray-400 mb-4">It pulls water into muscle cells, instantly improving leverage and fullness.</p><p className="text-sm text-white font-bold">Dose: 5g (1 tsp) daily.</p></Modal>}
+
+                    <div className="p-6 pt-8 pb-4 bg-gradient-to-b from-gray-900 to-black border-b border-gray-800 sticky top-0 z-20">
+                        <div className="flex justify-between items-center mb-4">
+                            <div>
+                                <h2 className="text-lg font-black text-white italic">{isRampUp ? "RAMP UP PHASE" : "BUILD PHASE"}</h2>
+                                <p className="text-xs text-blue-400 font-medium mt-1">{isRampUp ? "Consistency > Intensity." : "Push limits."}</p>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <div className="relative w-10 h-10 flex items-center justify-center">
+                                    <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36"><path className="text-gray-800" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="4" /><path className="text-green-500 transition-all duration-1000" strokeDasharray={`${ringPct}, 100`} d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="4" /></svg>
+                                    <span className="absolute text-[10px] font-bold text-white">{wins}/{data.user.supplements ? 5 : 4}</span>
+                                </div>
+                                <button onClick={() => setShowSettings(true)} className="text-gray-500"><Icons.Settings className="w-6 h-6"/></button>
+                            </div>
+                        </div>
+                        <div className="bg-gray-800/50 p-4 rounded-xl border border-gray-700/50 flex items-center gap-3">
+                            <div className="p-2 bg-blue-500/20 rounded-lg text-blue-400"><ActionIcon className="w-5 h-5" /></div>
+                            <div><div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Right Now</div><div className="text-sm font-bold text-white">{actionText}</div></div>
+                        </div>
+                    </div>
+
+                    <div className="p-4 space-y-6">
+                        {tab === 'fuel' && (
+                            <div className="anim-entry space-y-4">
+                                <div className="glass-panel p-5">
+                                    <div className="flex justify-between items-center mb-4"><h3 className="font-bold text-white flex items-center gap-2"><Icons.Utensils className="w-5 h-5" /> Protein <button onClick={()=>setModal('protein')} className="text-gray-600"><Icons.Info className="w-4 h-4" /></button></h3><span className="text-xs text-gray-500">{data.daily.proteinHits} / {hitsTarget} Hits</span></div>
+                                    <div className="flex gap-1 mb-4 h-3 rounded-full overflow-hidden bg-gray-900"><div className="bg-green-500 h-full transition-all" style={{width: `${Math.min((data.daily.proteinHits/hitsTarget)*100, 100)}%`}}></div></div>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <button onClick={() => logProtein(1)} className="bg-gray-800 py-3 rounded-xl text-sm font-bold text-white hover:bg-gray-700">+ Full Meal</button>
+                                        <button onClick={() => logProtein(0.5)} className="bg-gray-800 py-3 rounded-xl text-sm font-bold text-gray-400 hover:bg-gray-700">+ Snack</button>
+                                    </div>
+                                </div>
+                                <div className="glass-panel p-5">
+                                    <div className="flex justify-between items-center mb-2"><h3 className="font-bold text-white flex items-center gap-2"><Icons.Moon className="w-5 h-5" /> Sleep Hours</h3><span className="text-xl font-mono font-bold text-indigo-400">{data.daily.sleep || '--'}</span></div>
+                                    <div className="grid grid-cols-4 gap-1 mt-2">{[5,6,7,8].map(h => (<button key={h} onClick={() => setData(p => ({...p, daily: {...p.daily, sleep: h}}))} className={`py-3 rounded-lg text-xs font-bold border ${data.daily.sleep === h ? 'bg-indigo-600 border-indigo-500 text-white' : 'border-gray-800 text-gray-500'}`}>{h}{h===8?'+':''}</button>))}</div>
+                                </div>
+                                <div className="glass-panel p-5">
+                                    <div className="flex justify-between items-center mb-2"><h3 className="font-bold text-white flex items-center gap-2"><Icons.Footprints className="w-5 h-5" /> Steps</h3></div>
+                                    <div className="grid grid-cols-3 gap-1 mt-2">{[6000, 8000, 10000].map(s => (<button key={s} onClick={() => setData(p => ({...p, daily: {...p.daily, steps: s}}))} className={`py-3 rounded-lg text-xs font-bold border ${data.daily.steps === s ? 'bg-blue-600 border-blue-500 text-white' : 'border-gray-800 text-gray-500'}`}>{s/1000}k</button>))}</div>
+                                </div>
+                                {data.user.supplements && <button onClick={() => { setData(p => ({...p, daily: {...p.daily, creatine: !p.daily.creatine}})); }} className={`w-full p-4 rounded-xl flex items-center justify-between border transition-all ${data.daily.creatine ? 'bg-purple-900/20 border-purple-500' : 'bg-gray-900 border-gray-800'}`}><div className="flex items-center gap-3"><div className={`p-2 rounded-lg ${data.daily.creatine ? 'bg-purple-500 text-white' : 'bg-gray-800 text-gray-600'}`}><Icons.Pill className="w-5 h-5" /></div><span className={`font-bold ${data.daily.creatine ? 'text-white' : 'text-gray-500'}`}>Creatine (5g)</span></div><button onClick={(e) => { e.stopPropagation(); setModal('creatine'); }} className="text-gray-600"><Icons.Info className="w-5 h-5" /></button></button>}
+                            </div>
+                        )}
+
+                        {tab === 'train' && (
+                            <div className="anim-entry">
+                                {!data.daily.train && !data.daily.rest ? (
+                                    <div className="glass-panel p-6 border-blue-900/30">
+                                        <div className="flex justify-between items-start mb-6">
+                                            <div><div className="text-[10px] font-bold text-blue-400 uppercase tracking-widest mb-1">SESSION {data.status.workoutsCompleted + 1}</div><h2 className="text-3xl font-black text-white">{routineName}</h2></div>
+                                        </div>
+                                        <div className="space-y-3">
+                                            <button onClick={() => setData(p => ({...p, view: 'workout', activeSession: null}))} className="w-full bg-white text-black font-bold py-4 rounded-xl flex items-center justify-center gap-2 btn-active"><Icons.Play className="w-5 h-5 fill-current" /> Start Workout</button>
+                                            <button onClick={() => setData(p => ({...p, daily: {...p.daily, rest: true}}))} className="w-full py-3 rounded-xl border border-gray-800 text-gray-500 text-xs font-bold">Mark as Rest Day</button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="glass-panel p-8 text-center border-green-900/30">
+                                        <div className="text-green-500 flex justify-center mb-4"><Icons.Check className="w-12 h-12" /></div>
+                                        <h2 className="text-2xl font-bold text-white mb-2">{data.daily.rest ? "Resting" : "Session Complete"}</h2>
+                                        <p className="text-gray-500 text-sm">Grow time.</p>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="fixed bottom-0 left-0 right-0 bg-black/90 backdrop-blur-xl border-t border-gray-800 p-2 safe-bottom grid grid-cols-2 gap-1 z-40">
+                        <button onClick={() => setTab('fuel')} className={`flex flex-col items-center justify-center p-3 rounded-2xl transition-all ${tab==='fuel'?'bg-gray-800 text-white':'text-gray-500'}`}><span className="mb-1"><Icons.Utensils className="w-5 h-5" /></span><span className="text-[10px] font-bold uppercase tracking-wide">Fuel</span></button>
+                        <button onClick={() => setTab('train')} className={`flex flex-col items-center justify-center p-3 rounded-2xl transition-all ${tab==='train'?'bg-gray-800 text-white':'text-gray-500'}`}><span className="mb-1"><Icons.Dumbbell className="w-5 h-5" /></span><span className="text-[10px] font-bold uppercase tracking-wide">Train</span></button>
+                    </div>
+                </div>
+            );
+        };
+
+        const Workout = ({ data, setData, showToast }) => {
+            const sessionState = useMemo(() => {
+                if (data.activeSession) return data.activeSession; // Recover
+                const routine = getRoutine(data);
+                return { exercises: routine.exercises, index: 0, setNum: 1, startTime: Date.now() };
+            }, []);
+
+            // Sync session start to parent
+            useEffect(() => { if(!data.activeSession) setData(p => ({...p, activeSession: sessionState})); }, []);
+
+            const [idx, setIdx] = useState(data.activeSession?.index || 0);
+            const [setNum, setSetNum] = useState(data.activeSession?.setNum || 1);
+            const [restState, setRestState] = useState(data.activeSession?.restState || null); 
+            const [activeStart, setActiveStart] = useState(null); 
+            const [activeElapsed, setActiveElapsed] = useState(0); 
+            const [val, setVal] = useState(0); 
+            const [showSafety, setShowSafety] = useState(false);
+            
+            const ex = sessionState.exercises[idx];
+            const totalSets = ex.isWarmup ? 1 : (ex.isFinisher ? 2 : 3);
+
+            const [timeLeft, setTimeLeft] = useState(0);
+            const [activeTimeDisplay, setActiveTimeDisplay] = useState(0);
+
+            // Persist State
+            const persistState = (updates) => {
+                setData(p => ({...p, activeSession: { ...p.activeSession, index: idx, setNum: setNum, restState: restState, ...updates }}));
+            };
+
             useEffect(() => {
-                const requestWakeLock = async () => { if (view === 'workout' && 'wakeLock' in navigator) { try { await navigator.wakeLock.request('screen'); } catch (err) {} } };
-                requestWakeLock();
-            }, [view]);
+                if (ex.unit === 'time') { 
+                    setVal(0); 
+                    if(!activeStart) setActiveTimeDisplay(activeElapsed);
+                } else {
+                    setVal(Math.max(0, ex.range?.[0] || 8));
+                }
+            }, [idx]);
 
-            const playTone = (type) => {
-                if (!appData.settings.sound) return;
-                try {
-                    const AudioContext = window.AudioContext || window.webkitAudioContext;
-                    if (!AudioContext) return;
-                    const ctx = new AudioContext(); const osc = ctx.createOscillator(); const gain = ctx.createGain();
-                    osc.connect(gain); gain.connect(ctx.destination); const now = ctx.currentTime;
-                    const tones = { tick: [800, 0.05], start: [440, 0.3], success: [600, 0.4], perfect: [500, 0.5] };
-                    if (type === 'celebrate') {
-                        [440, 554, 659, 880].forEach((freq, i) => {
-                            const osc2 = ctx.createOscillator(); const gain2 = ctx.createGain();
-                            osc2.connect(gain2); gain2.connect(ctx.destination);
-                            osc2.frequency.value = freq; gain2.gain.setValueAtTime(0.1, now + (i*0.1)); gain2.gain.exponentialRampToValueAtTime(0.01, now + 1);
-                            osc2.start(now + (i*0.1)); osc2.stop(now + 1);
-                        });
-                    } else {
-                        const [freq, dur] = tones[type] || [440, 0.1];
-                        osc.frequency.setValueAtTime(freq, now); if(type === 'start') osc.frequency.exponentialRampToValueAtTime(880, now + 0.1);
-                        gain.gain.setValueAtTime(0.1, now); osc.start(now); osc.stop(now + dur);
-                    }
-                } catch (e) { console.error(e); }
-            };
-
-            const calculateTargets = (profile = appData.userProfile) => {
-                const w = parseFloat(profile.weight || 70); const h = parseFloat(profile.height || 175); 
-                const a = parseFloat(profile.age || 30); const isMale = profile.gender === 'male';
-                if (isNaN(w) || isNaN(h)) return { calorieTarget: 2000, proteinTarget: 150 };
-                let bmr = (10 * w) + (6.25 * h) - (5 * a) + (isMale ? 5 : -161);
-                const tdee = bmr * 1.55; 
-                return { calorieTarget: Math.round(tdee * 0.85), proteinTarget: Math.round(w * 2.2) };
-            };
-
-            const calculateBodyFat = (waist, neck, hip, height, gender) => {
-                if (!waist || !neck || !height) return null;
-                if (gender === 'female' && !hip) return null;
-                let bf = 0;
-                if (gender === 'male') bf = 495 / (1.0324 - 0.19077 * Math.log10(waist - neck) + 0.15456 * Math.log10(height)) - 450;
-                else bf = 495 / (1.29579 - 0.35004 * Math.log10(waist + hip - neck) + 0.22100 * Math.log10(height)) - 450;
-                return bf > 0 ? bf.toFixed(1) : null;
-            };
-
-            const { calorieTarget, proteinTarget } = calculateTargets();
-            const isPerfectDayLive = () => {
-                const log = appData.dailyLog;
-                return (log.protein >= proteinTarget * 0.9 && log.calories > 1200 && log.calories <= calorieTarget + 200 && log.sleep >= 7 && log.water >= 6 && log.steps && log.creatine);
-            };
-
-            // DATA LOADING
             useEffect(() => {
-                const saved = localStorage.getItem('recomp-final-v4');
-                if (saved) {
-                    const parsed = JSON.parse(saved);
-                    const today = new Date().toISOString().split('T')[0];
-                    if (parsed.dailyLog.date !== today) {
-                        const { proteinTarget, calorieTarget } = calculateTargets(parsed.userProfile);
-                        const log = parsed.dailyLog;
-                        const isPerfect = log.protein >= proteinTarget * 0.9 && log.steps && log.sleep >= 7 && log.water >= 6 && log.creatine && (log.calories > 1200 && log.calories <= calorieTarget + 200);
-                        const isHabitSuccess = log.protein >= proteinTarget * 0.9 || log.steps; 
-                        if (parsed.dailyLog.date) {
-                            if (isPerfect) { parsed.perfectDays += 1; parsed.habitStreak += 1; setMorningReport({ title: "Perfect Day! 🌟", text: "You did it all. This is the difference between dreaming and achieving." }); } 
-                            else if (isHabitSuccess) { parsed.habitStreak += 1; setMorningReport({ title: "Streak Alive 🔥", text: "Momentum maintained. Aim for 'Perfect' today." }); } 
-                            else { parsed.habitStreak = 0; setMorningReport({ title: "Fresh Start 🌅", text: "Yesterday is gone. Win today." }); }
+                const tick = setInterval(() => {
+                    if (restState) {
+                        const remaining = Math.ceil((restState.endTime - Date.now()) / 1000);
+                        setTimeLeft(Math.max(0, remaining));
+                        if (remaining <= 0) {
+                            setRestState(null);
+                            setSetNum(s => { const next = s+1; persistState({setNum: next, restState: null}); return next; });
+                            try { window.navigator.vibrate([200, 100, 200]); } catch(e){}
                         }
-                        parsed.dailyLog = { date: today, protein: 0, calories: 0, sleep: 0, steps: false, water: 0, creatine: false, isRestDay: false };
                     }
-                    if (!parsed.measurements) parsed.measurements = [];
-                    if (!parsed.exerciseHistory) parsed.exerciseHistory = {};
-                    setAppData(parsed);
-                    if (parsed.userProfile.onboarded) setView('main');
+                    if (activeStart) {
+                        const current = Math.floor((Date.now() - activeStart) / 1000) + activeElapsed;
+                        setActiveTimeDisplay(current);
+                    }
+                }, 100);
+                return () => clearInterval(tick);
+            }, [restState, activeStart, activeElapsed]);
+
+            const toggleActiveTimer = () => {
+                if (activeStart) { setActiveElapsed(prev => prev + Math.floor((Date.now() - activeStart) / 1000)); setActiveStart(null); } 
+                else { setActiveStart(Date.now()); }
+            };
+            
+            const stopActiveTimer = () => { setActiveStart(null); setActiveElapsed(0); setActiveTimeDisplay(0); };
+
+            const logSet = (rating) => {
+                stopActiveTimer();
+                const performance = ex.unit === 'time' ? activeTimeDisplay : val;
+                const targetTop = ex.range ? ex.range[1] : 99;
+                const hitTop = performance >= targetTop;
+
+                if (!ex.isWarmup && !ex.isFinisher) {
+                    const fam = ex.family;
+                    const prog = data.progression[fam] || { level: 0, easyStreak: 0, hardStreak: 0 };
+                    let newProg = { ...prog };
+
+                    if (rating === 'easy') {
+                        if (hitTop) {
+                            newProg.easyStreak += 1; newProg.hardStreak = 0;
+                            if (newProg.easyStreak >= 2) {
+                                if (newProg.level < ex.availableCount - 1) { newProg.level += 1; newProg.easyStreak = 0; showToast(`Promoted to Level ${newProg.level + 1}!`); }
+                                else { showToast("Max Level Reached!"); }
+                            } else { showToast("One more 'Easy' to level up."); }
+                        } else { showToast("Do more reps before leveling up."); }
+                    } else if (rating === 'hard') {
+                        newProg.hardStreak += 1; newProg.easyStreak = 0;
+                        if (newProg.hardStreak >= 2) { if (newProg.level > 0) { newProg.level -= 1; showToast("Volume reduced for recovery."); } newProg.hardStreak = 0; }
+                    } else { newProg.easyStreak = 0; newProg.hardStreak = 0; }
+                    setData(p => ({...p, progression: {...p.progression, [fam]: newProg}}));
+                }
+
+                if (setNum < totalSets) {
+                    const nextRest = { endTime: Date.now() + 60000 };
+                    setRestState(nextRest);
+                    persistState({ restState: nextRest, setNum: setNum + 1 });
+                } else {
+                    if (idx < sessionState.exercises.length - 1) {
+                        setIdx(i => i + 1); setSetNum(1); setRestState(null);
+                        persistState({ index: idx + 1, setNum: 1, restState: null });
+                    } else {
+                        setData(p => ({ ...p, view: 'dashboard', activeSession: null, status: {...p.status, workoutsCompleted: p.status.workoutsCompleted + 1}, daily: {...p.daily, train: true} }));
+                        showToast("Workout Complete!");
+                    }
+                }
+            };
+            
+            const skipRest = () => { setRestState(null); setSetNum(s => { const next = s+1; persistState({setNum: next, restState: null}); return next; }); };
+            const minReps = ex.range ? ex.range[0] : 0;
+            const maxReps = ex.range ? ex.range[1] + 5 : 99;
+
+            return (
+                <div className="min-h-screen bg-black flex flex-col p-6 safe-top pb-10">
+                    {showSafety && <Modal title="Safety Check" onClose={() => setShowSafety(false)}><p className="text-gray-400 text-sm mb-2"><strong>Good Pain:</strong> Muscle burning, fatigue, "pump".</p><p className="text-gray-400 text-sm"><strong>Bad Pain:</strong> Sharp, shooting, joint pinching. <strong>Stop immediately.</strong> Reduce range of motion or swap exercise.</p></Modal>}
+
+                    <div className="flex justify-between items-center mb-8">
+                        <div className="flex items-center gap-2"><span className="text-gray-500 text-xs font-bold tracking-widest">{ex.isWarmup ? "WARM UP" : (ex.isFinisher ? "FINISHER" : `EXERCISE ${idx} / ${sessionState.exercises.length - 1}`)}</span></div>
+                        <button onClick={() => { if(confirm("Quit workout?")) setData(p => ({...p, view: 'dashboard', activeSession: null})); }}><Icons.X className="w-6 h-6 text-gray-500"/></button>
+                    </div>
+
+                    {restState ? (
+                        <div className="flex-1 flex flex-col justify-center text-center anim-entry">
+                            <div className="text-blue-500 font-bold text-sm mb-4 tracking-widest animate-pulse">RESTING</div>
+                            <div className="text-9xl font-black font-mono text-white mb-8">{timeLeft}</div>
+                            <button onClick={skipRest} className="bg-gray-800 text-white px-8 py-4 rounded-full text-sm font-bold">Skip Rest</button>
+                        </div>
+                    ) : (
+                        <div className="flex-1 flex flex-col justify-between anim-entry">
+                            <div>
+                                <h1 className="text-3xl font-black text-white leading-tight mb-2">{ex.name}</h1>
+                                <div className="text-gray-400 text-sm flex gap-3 mb-6">
+                                    <span className="bg-gray-900 px-3 py-1 rounded border border-gray-800 text-blue-400 font-bold">Range: {ex.range ? `${ex.range[0]}-${ex.range[1]}` : ex.reps} {ex.unit==='time'?'s':''}</span>
+                                    <span className="bg-gray-900 px-3 py-1 rounded border border-gray-800">Set {setNum}/{totalSets}</span>
+                                </div>
+                                <div className="space-y-3">
+                                    {ex.cues.map((c, i) => <div key={i} className="flex items-center gap-3 text-gray-300"><div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>{c}</div>)}
+                                </div>
+                                <button onClick={() => setShowSafety(true)} className="mt-6 text-xs text-gray-500 underline flex items-center gap-1"><Icons.Shield className="w-3 h-3"/> Is this pain normal?</button>
+                            </div>
+
+                            <div className="space-y-6">
+                                <div className="bg-gray-900 p-6 rounded-3xl flex flex-col items-center">
+                                    <div className="text-gray-500 text-xs font-bold uppercase tracking-widest mb-4">{ex.unit === 'time' ? 'SECONDS' : 'REPS'}</div>
+                                    
+                                    {ex.unit === 'time' ? (
+                                        <div className="flex flex-col items-center gap-4">
+                                            <div className="text-5xl font-mono font-black text-white">{activeTimeDisplay}</div>
+                                            <button onClick={toggleActiveTimer} className={`px-6 py-2 rounded-full font-bold flex items-center gap-2 ${activeStart ? 'bg-yellow-900 text-yellow-300' : 'bg-green-900 text-green-300'}`}>
+                                                {activeStart ? <><Icons.Pause className="w-4 h-4"/> Pause</> : <><Icons.Play className="w-4 h-4"/> Start</>}
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div className="flex items-center gap-6">
+                                            <button onClick={() => setVal(v => Math.max(minReps, v-1))} className="w-12 h-12 bg-gray-800 rounded-full flex items-center justify-center text-white"><Icons.Minus className="w-6 h-6"/></button>
+                                            <div className="text-5xl font-black text-white w-20 text-center">{val}</div>
+                                            <button onClick={() => setVal(v => Math.min(maxReps, v+1))} className="w-12 h-12 bg-gray-800 rounded-full flex items-center justify-center text-white"><Icons.Plus className="w-6 h-6"/></button>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div>
+                                    <div className="text-center text-xs text-gray-500 uppercase font-bold tracking-widest mb-2">How was the set?</div>
+                                    <div className="grid grid-cols-3 gap-3">
+                                        <button onClick={() => logSet('easy')} className="bg-gray-900 border border-gray-800 p-4 rounded-2xl text-green-400 font-bold hover:bg-green-900/20 active:scale-95 transition-all">Easy</button>
+                                        <button onClick={() => logSet('good')} className="bg-gray-900 border border-gray-800 p-4 rounded-2xl text-blue-400 font-bold hover:bg-blue-900/20 active:scale-95 transition-all">Good</button>
+                                        <button onClick={() => logSet('hard')} className="bg-gray-900 border border-gray-800 p-4 rounded-2xl text-red-400 font-bold hover:bg-red-900/20 active:scale-95 transition-all">Hard</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const Settings = ({ data, setData, onClose }) => {
+            const [view, setView] = useState('menu'); 
+            const downloadData = () => {
+                const element = document.createElement("a");
+                const file = new Blob([JSON.stringify(data)], {type: 'application/json'});
+                element.href = URL.createObjectURL(file);
+                element.download = "skinny_fat_data.json";
+                document.body.appendChild(element); element.click();
+            };
+            
+            const handleImport = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    try {
+                        const json = JSON.parse(event.target.result);
+                        if (json.user && json.log && json.history) {
+                            localStorage.setItem('skinny-fat-sol-v22', JSON.stringify(json));
+                            window.location.reload();
+                        } else { alert("Invalid file format"); }
+                    } catch (err) { alert("Error reading file"); }
+                };
+                reader.readAsText(file);
+            };
+
+            const FAQ = () => (
+                <div className="space-y-4 h-96 overflow-y-auto"><button onClick={() => setView('menu')} className="text-xs text-blue-400 mb-2 font-bold">&larr; Back to Settings</button><div className="p-4 bg-gray-800 rounded-xl"><h4 className="font-bold text-white mb-1">Should I do cardio?</h4><p className="text-xs text-gray-400">Walks only. HIIT/running spikes cortisol which eats muscle. Aim for 8k steps.</p></div><div className="p-4 bg-gray-800 rounded-xl"><h4 className="font-bold text-white mb-1">Missed a workout?</h4><p className="text-xs text-gray-400">Just continue. Do NOT double up next time. Consistency > Intensity.</p></div><div className="p-4 bg-gray-800 rounded-xl"><h4 className="font-bold text-white mb-1">Scale not moving?</h4><p className="text-xs text-gray-400">Good. If waist is shrinking but weight is stable, you are building muscle while losing fat (Recomp).</p></div><div className="p-4 bg-gray-800 rounded-xl"><h4 className="font-bold text-white mb-1">Alcohol?</h4><p className="text-xs text-gray-400">It halts fat burning for 24h. Limit to 1 day/week if you want fast results.</p></div></div>
+            );
+            return (
+                <div className="fixed inset-0 bg-black/90 z-50 p-6 flex flex-col justify-center">
+                    <div className="bg-gray-900 p-6 rounded-2xl border border-gray-800">
+                        <div className="flex justify-between items-center mb-6"><h2 className="text-xl font-bold text-white">Settings</h2><button onClick={onClose}><Icons.X className="w-6 h-6 text-gray-500"/></button></div>
+                        {view === 'faq' ? <FAQ /> : (
+                            <div className="space-y-4">
+                                <button onClick={() => setView('faq')} className="w-full bg-gray-800 p-4 rounded-xl flex items-center justify-between text-left"><span className="font-bold text-white flex gap-2"><Icons.Help className="w-5 h-5"/> Help & FAQ</span> <span>&rarr;</span></button>
+                                <div><label className="block text-xs text-gray-500 mb-2 uppercase">Manual Calorie Override</label><input type="number" placeholder="Auto" value={data.user.manualCalories || ''} onChange={e => setData(p => ({...p, user: {...p.user, manualCalories: e.target.value ? parseInt(e.target.value) : null}}))} className="w-full bg-black border border-gray-700 p-3 rounded-lg text-white" /></div>
+                                <div><label className="block text-xs text-gray-500 mb-2 uppercase">Manual Protein Override</label><input type="number" placeholder="Auto" value={data.user.manualProtein || ''} onChange={e => setData(p => ({...p, user: {...p.user, manualProtein: e.target.value ? parseInt(e.target.value) : null}}))} className="w-full bg-black border border-gray-700 p-3 rounded-lg text-white" /></div>
+                                
+                                <div className="grid grid-cols-2 gap-2 pt-2">
+                                    <button onClick={downloadData} className="border border-gray-700 text-gray-400 p-4 rounded-xl flex flex-col items-center justify-center gap-2 text-xs"><Icons.Download className="w-4 h-4" /> Export Data</button>
+                                    <label className="border border-gray-700 text-gray-400 p-4 rounded-xl flex flex-col items-center justify-center gap-2 text-xs cursor-pointer hover:bg-gray-800">
+                                        <Icons.Upload className="w-4 h-4" /> Restore Data
+                                        <input type="file" onChange={handleImport} className="hidden" accept=".json" />
+                                    </label>
+                                </div>
+                                <div className="text-[10px] text-gray-600 text-center pt-4">Version 22.0 • Skinny Fat Solution</div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        const RecompApp = () => {
+            const [data, setData] = useState({ user: { weight: '', height: '', age: '', mode: 'recomp', freq: 3, onboarded: false, equipment: [], supplements: true }, status: { workoutsCompleted: 0 }, progression: {}, daily: { proteinHits: 0, steps: 0, creatine: false, sleep: 0, train: false, rest: false }, activeSession: null, view: 'onboarding' });
+            const [toast, setToast] = useState(null);
+            const showToast = (msg, undo) => { setToast({msg, undo}); setTimeout(() => setToast(null), 3000); };
+
+            useEffect(() => {
+                const saved = localStorage.getItem('skinny-fat-sol-v22');
+                if (saved) {
+                    try {
+                        const parsed = JSON.parse(saved);
+                        // Safe Defaults (Migration)
+                        parsed.user = { weight: '', height: '', age: '', mode: 'recomp', freq: 3, onboarded: false, equipment: [], supplements: true, ...parsed.user };
+                        parsed.daily = { proteinHits: 0, steps: 0, creatine: false, sleep: 0, train: false, rest: false, ...parsed.daily };
+                        parsed.progression = parsed.progression || {};
+                        setData(parsed);
+                    } catch(e) { console.error("Save Corrupt"); }
                 }
             }, []);
 
-            useEffect(() => { if (isPerfectDayLive() && !showConfetti) { setShowConfetti(true); playTone('celebrate'); setTimeout(() => setShowConfetti(false), 3000); } }, [appData.dailyLog]);
+            useEffect(() => { if (data.user.onboarded) localStorage.setItem('skinny-fat-sol-v22', JSON.stringify(data)); }, [data]);
 
-            // ALTERNATIVES DATABASE
-            const ALTERNATIVES = {
-                'pushups': [{ id: 'knee_pushups', name: 'Knee Pushups', desc: 'Easier variation', type: 'push' }, { id: 'wall_pushups', name: 'Wall Pushups', desc: 'Lowest impact', type: 'push' }],
-                'squats': [{ id: 'box_squats', name: 'Box Squats', desc: 'Sit to a chair', type: 'leg' }, { id: 'lunges_static', name: 'Static Lunges', desc: 'Easier balance', type: 'leg' }],
-                'plank': [{ id: 'deadbug', name: 'Dead Bugs', desc: 'Back friendly', type: 'time', duration: 45 }, { id: 'knee_plank', name: 'Knee Plank', desc: 'Easier core', type: 'time', duration: 45 }],
-                'deadbug': [{ id: 'bird_dog', name: 'Bird Dogs', desc: 'Stability focus', type: 'time', duration: 60 }],
-                'glute': [{ id: 'hip_thrust', name: 'Hip Thrust', desc: 'Shoulders on bench', type: 'leg' }]
-            };
-
-            const swapExercise = () => {
-                if (!activeWorkout) return;
-                const currentEx = activeWorkout.exercises[exerciseIndex];
-                const baseId = currentEx.id.split('_')[0]; 
-                const alts = ALTERNATIVES[baseId] || [];
-                const newEx = alts.length > 0 ? alts[0] : null; 
-                if (newEx) {
-                    const newExercises = [...activeWorkout.exercises];
-                    newExercises[exerciseIndex] = { ...newEx, target: 'Failure', level: 1 };
-                    setActiveWorkout({ ...activeWorkout, exercises: newExercises });
-                    setCurrentSet(1); setRepInput(''); setRpeInput(null);
-                    if (newEx.type === 'time') { setTimer(newEx.duration); setShowTimedInput(false); }
-                } else {
-                    alert("No alternatives available.");
-                }
-            };
-
-            const getSmartTarget = (baseId, defaultTarget) => { const history = appData.exerciseHistory[baseId]; if (!history) return defaultTarget; return `${history.nextTarget || defaultTarget} reps`; };
-            const getExerciseVersion = (baseId) => {
-                const history = appData.exerciseHistory; const getLevel = (id) => (history[id]?.maxReps || 0);
-                if (baseId === 'pushups') {
-                    if (getLevel('pushups_v3') > 20) return { id: 'pushups_v3', name: 'Decline Push-ups + Weight', target: 'Failure', desc: 'Add backpack with weight.', level: 4, type: 'push', icon: Icons.Pushup };
-                    if (getLevel('pushups_v1') > 30) return { id: 'pushups_v3', name: 'Decline Push-ups', target: getSmartTarget('pushups_v3', 15), desc: 'Feet on chair. Target upper chest.', level: 3, type: 'push', icon: Icons.Pushup };
-                    if (getLevel('pushups_v1') > 20) return { id: 'pushups_v2', name: 'Diamond Push-ups', target: getSmartTarget('pushups_v2', 12), desc: 'Hands touching. Target triceps.', level: 2, type: 'push', icon: Icons.Pushup };
-                    return { id: 'pushups_v1', name: 'Slow Push-ups', target: getSmartTarget('pushups_v1', 10), desc: '3s down, 1s up. Control is key.', level: 1, type: 'push', icon: Icons.Pushup };
-                }
-                if (baseId === 'squats') {
-                    if (getLevel('squats_v1') > 40) return { id: 'squats_v3', name: 'Bulgarian Split Squats', target: getSmartTarget('squats_v3', 12), desc: 'One foot on chair behind.', level: 3, type: 'leg', icon: Icons.Squat };
-                    if (getLevel('squats_v1') > 25) return { id: 'squats_v2', name: 'Jump Squats', target: getSmartTarget('squats_v2', 20), desc: 'Explosive power.', level: 2, type: 'leg', icon: Icons.Squat };
-                    return { id: 'squats_v1', name: 'Pause Squats', target: getSmartTarget('squats_v1', 15), desc: 'Hold bottom 2s. No bouncing.', level: 1, type: 'leg', icon: Icons.Squat };
-                }
-                if (baseId === 'plank') return { id: 'plank_v1', name: 'RKC Plank', target: `${30 + (Math.floor(appData.totalWorkouts/10)*10)}s`, desc: 'Squeeze glutes and fists hard.', type:'time', duration: 30 + (Math.floor(appData.totalWorkouts/10)*10), level: 1, icon: Icons.Plank };
-                if (baseId === 'glute') return { id: 'glute_v1', name: 'Glute Bridges', target: getSmartTarget('glute_v1', 20), desc: 'Squeeze at top. Do not arch back.', level: 1, type: 'leg', icon: Icons.Generic };
-                if (baseId === 'lunges') return { id: 'lunges_v1', name: 'Reverse Lunges', target: getSmartTarget('lunges_v1', 12), desc: 'Step back far. Vertical shin.', level: 1, type: 'leg', icon: Icons.Generic };
-                if (baseId === 'deadbug') return { id: 'deadbug', name: 'Dead Bugs', target: '60s', desc: 'Lower back glued to floor.', type:'time', duration: 60, level: 1, icon: Icons.Generic };
-                if (baseId === 'snow_angels') return { id: 'snow_angels', name: 'Prone Snow Angels', target: getSmartTarget('snow_angels', 15), desc: 'Lying on belly. Swim arms.', level: 1, type: 'back', icon: Icons.Generic };
-                if (baseId === 'bird_dog') return { id: 'bird_dog', name: 'Bird Dogs', target: '60s', desc: 'No hip wobble.', type:'time', duration: 60, level: 1, icon: Icons.Generic };
-                return { id: baseId, name: baseId, target: '10', desc: '', level: 1, icon: Icons.Generic };
-            };
-
-            const prepareWorkout = () => {
-                const isDeload = (appData.totalWorkouts + 1) % 12 === 0; const isRoutineA = appData.totalWorkouts % 2 === 0;
-                const routine = {
-                    name: isDeload ? "Deload Week" : (isRoutineA ? "Anterior Chain" : "Posterior Chain"), isDeload: isDeload,
-                    exercises: isRoutineA ? [getExerciseVersion('pushups'), getExerciseVersion('squats'), getExerciseVersion('deadbug'), getExerciseVersion('plank')] : [getExerciseVersion('glute'), getExerciseVersion('snow_angels'), getExerciseVersion('lunges'), getExerciseVersion('bird_dog')]
-                };
-                setActiveWorkout({ ...routine, startTime: Date.now() }); setShowWarmup(true);
-            };
-
-            const startActualWorkout = () => { setShowWarmup(false); setExerciseIndex(0); setCurrentSet(1); setTotalSets(activeWorkout.isDeload ? 2 : 3); setView('workout'); setIsResting(false); setRepInput(''); setRpeInput(null); setShowTimedInput(false); if (activeWorkout.exercises[0].type === 'time') setTimer(activeWorkout.exercises[0].duration); playTone('start'); };
-
-            // CORSET PROTOCOL
-            const startFinisher = () => { setShowFinisher(true); setTimer(20); setIsResting(false); setIsPaused(false); setCurrentSet(1); setTotalSets(3); playTone('start'); };
-
+            // Daily Reset Logic
             useEffect(() => {
-                if ((view === 'workout' || showFinisher) && !isPaused) {
-                    if (isResting || (showFinisher) || activeWorkout?.exercises[exerciseIndex].type === 'time') {
-                        timerRef.current = setInterval(() => {
-                            setTimer(prev => { if (prev <= 1) { handleTimerComplete(); return 0; } if (prev <= 4) playTone('tick'); return prev - 1; });
-                        }, 1000);
-                    }
+                const lastDate = localStorage.getItem('sfs-v22-date');
+                const today = new Date().toLocaleDateString();
+                if (lastDate !== today) {
+                    setData(p => ({...p, daily: { proteinHits: 0, steps: 0, creatine: false, sleep: 0, train: false, rest: false }}));
+                    localStorage.setItem('sfs-v22-date', today);
                 }
-                return () => clearInterval(timerRef.current);
-            }, [view, isPaused, isResting, exerciseIndex, activeWorkout, showFinisher]);
+            }, []);
 
-            const handleTimerComplete = () => {
-                if (showFinisher) {
-                    if (isResting) { setIsResting(false); setTimer(20); setCurrentSet(p => p+1); playTone('start'); } 
-                    else { if (currentSet >= 3) { setShowFinisher(false); finishWorkout(); } else { setIsResting(true); setTimer(10); playTone('success'); } }
-                    return;
-                }
-                if (isResting) {
-                    playTone('start'); setIsResting(false);
-                    if (currentSet < totalSets) { setCurrentSet(p => p + 1); setRepInput(''); setRpeInput(null); setShowTimedInput(false); if (activeWorkout.exercises[exerciseIndex].type === 'time') setTimer(activeWorkout.exercises[exerciseIndex].duration); } else advanceExercise();
-                } else {
-                    playTone('success');
-                    if (activeWorkout.exercises[exerciseIndex].type === 'time') setShowTimedInput(true); else startRest();
-                }
-            };
-
-            const handleRepComplete = () => {
-                const ex = activeWorkout.exercises[exerciseIndex];
-                let reps = parseInt(repInput); if (isNaN(reps) && ex.type === 'time') reps = ex.duration; if (isNaN(reps)) reps = 0;
-                let nextTarget = reps; if (rpeInput === 'easy') nextTarget = Math.floor(reps * 1.2); else if (rpeInput === 'good') nextTarget = reps + 1; 
-                setAppData(prev => ({ ...prev, exerciseHistory: { ...prev.exerciseHistory, [ex.id]: { maxReps: Math.max(prev.exerciseHistory[ex.id]?.maxReps || 0, reps), nextTarget: nextTarget } } }));
-                playTone('success'); setShowTimedInput(false); startRest();
-            };
-
-            const startRest = () => { if (exerciseIndex >= activeWorkout.exercises.length - 1 && currentSet >= totalSets) { startFinisher(); return; } setIsResting(true); setTimer(currentSet === totalSets ? 60 : 45); };
-            const advanceExercise = () => { const nextIndex = exerciseIndex + 1; if (nextIndex < activeWorkout.exercises.length) { setExerciseIndex(nextIndex); setCurrentSet(1); setRepInput(''); setRpeInput(null); setShowTimedInput(false); if (activeWorkout.exercises[nextIndex].type === 'time') setTimer(activeWorkout.exercises[nextIndex].duration); } else startFinisher(); };
-            const finishWorkout = () => { const xp = 150 + (totalSets * 40); setAppData(prev => ({ ...prev, totalWorkouts: prev.totalWorkouts + 1, xp: prev.xp + xp, workoutStreak: prev.workoutStreak + 1, habitStreak: prev.habitStreak + 1, completedWorkouts: [...prev.completedWorkouts, { date: new Date().toISOString().split('T')[0], xp }] })); setView('summary'); };
-
-            const exportData = () => {
-                const dataStr = JSON.stringify(appData); const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-                const linkElement = document.createElement('a'); linkElement.setAttribute('href', dataUri); linkElement.setAttribute('download', `fit-backup-${new Date().toISOString().slice(0,10)}.json`); linkElement.click();
-            };
-            const importData = (e) => { const fileReader = new FileReader(); fileReader.readAsText(e.target.files[0], "UTF-8"); fileReader.onload = e => { setAppData(JSON.parse(e.target.result)); alert("Data Restored!"); }; };
-
-            const TrainTab = () => {
-                const totalSets = (appData.totalWorkouts + 1) % 12 === 0 ? 8 : 12;
-                return (
-                <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                    <div className={`rounded-3xl p-6 shadow-xl relative overflow-hidden group ${(appData.totalWorkouts + 1) % 12 === 0 ? 'bg-purple-900' : 'bg-gradient-to-br from-blue-800 to-indigo-900'}`}>
-                        <div className="relative z-10">
-                            <div className="flex justify-between items-start mb-4"><span className="bg-white/10 backdrop-blur px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider text-white border border-white/20">{(appData.totalWorkouts + 1) % 12 === 0 ? 'Recovery Week' : (appData.totalWorkouts % 2 === 0 ? 'Routine A' : 'Routine B')}</span><span className="text-xs font-bold text-green-300 flex items-center gap-1"><Icons.Zap className="w-3 h-3"/> {totalSets} Sets</span></div>
-                            {appData.dailyLog.isRestDay ? (<div><h2 className="text-3xl font-bold text-white mb-2">Rest & Grow</h2><p className="text-blue-100 text-xs mb-6 max-w-[90%] opacity-90 leading-relaxed">Muscles grow during rest. Focus on hitting your protein target.</p><button onClick={() => setAppData(p => ({...p, dailyLog: {...p.dailyLog, isRestDay: false}}))} className="w-full bg-white/10 text-white font-bold py-4 rounded-xl border border-white/20">Cancel Rest Mode</button></div>) : (<div><h2 className="text-3xl font-bold text-white mb-2">{(appData.totalWorkouts + 1) % 12 === 0 ? 'Deload Session' : 'Build Density'}</h2><p className="text-blue-100 text-xs mb-6 max-w-[90%] opacity-90 leading-relaxed">{(appData.totalWorkouts + 1) % 12 === 0 ? 'Volume reduced to recover CNS.' : 'Smart Coach Active: Targets updated based on RPE.'}</p><div className="flex gap-3"><button onClick={prepareWorkout} className="flex-1 bg-white text-blue-900 font-bold py-4 rounded-xl flex items-center justify-center gap-2 hover:bg-blue-50 transition-colors shadow-lg"><Icons.Play className="w-5 h-5 fill-current" /> START</button><button onClick={() => setAppData(p => ({...p, dailyLog: {...p.dailyLog, isRestDay: true}, habitStreak: p.habitStreak + 1}))} className="px-4 bg-blue-900/50 text-blue-200 font-bold rounded-xl border border-blue-500/30 flex flex-col items-center justify-center text-[10px] gap-1"><Icons.Sofa className="w-5 h-5" /> REST</button></div></div>)}
-                        </div>
-                    </div>
-                    <div className="bg-neutral-900 p-5 rounded-2xl border border-neutral-800 relative"><div className="flex items-center gap-2 mb-3"><Icons.Brain className="w-5 h-5 text-purple-500" /><span className="text-sm font-bold text-white">Coach's Insight</span></div><p className="text-xs text-neutral-400 leading-relaxed">{(appData.totalWorkouts < 5) ? "Focus on feeling the muscle stretch. Slow down the negative phase." : (appData.habitStreak > 5) ? "Consistency is king. Now try to increase intensity (RPE)." : "Trust the measurements, not the mirror."}</p></div>
-                </div>
-            )};
-
-            const FuelTab = () => (
-                <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                    {showMealGuide ? (<div className="bg-green-900/10 border border-green-800 p-5 rounded-3xl"><div className="flex justify-between items-center mb-4"><div className="flex items-center gap-2"><Icons.ChefHat className="w-5 h-5 text-green-500"/><span className="text-sm font-bold text-white">Meal Architect</span></div><button onClick={() => setShowMealGuide(false)}><Icons.X className="w-4 h-4 text-neutral-500"/></button></div><div className="space-y-4 text-xs text-neutral-300"><div className="bg-neutral-900/50 p-3 rounded-xl"><strong className="text-green-400 block mb-1">Breakfast ({Math.round(calorieTarget*0.25)} kcal)</strong>3 Eggs, 1 Slice Toast, Spinach. (20g Protein)</div><div className="bg-neutral-900/50 p-3 rounded-xl"><strong className="text-green-400 block mb-1">Lunch ({Math.round(calorieTarget*0.35)} kcal)</strong>Chicken Breast (150g), 1/2 Cup Rice, Veggies. (40g Protein)</div><div className="bg-neutral-900/50 p-3 rounded-xl"><strong className="text-green-400 block mb-1">Dinner ({Math.round(calorieTarget*0.30)} kcal)</strong>Lean Beef/Tofu (150g), Salad, 1 Potato. (40g Protein)</div><div className="bg-neutral-900/50 p-3 rounded-xl"><strong className="text-green-400 block mb-1">Snack ({Math.round(calorieTarget*0.10)} kcal)</strong>Greek Yogurt/Whey. (25g Protein)</div></div></div>) : (<button onClick={() => setShowMealGuide(true)} className="w-full bg-neutral-900 border border-neutral-800 p-4 rounded-2xl flex items-center justify-between text-sm font-bold text-green-400"><span className="flex items-center gap-2"><Icons.ChefHat className="w-5 h-5"/> What should I eat?</span><Icons.ChevronRight className="w-4 h-4"/></button>)}
-                    <div className="bg-neutral-900 p-6 rounded-3xl border border-neutral-800 relative overflow-hidden"><div className="flex justify-between items-start mb-2 relative z-10"><div><div className="flex items-center gap-2 mb-1"><Icons.Utensils className="w-5 h-5 text-green-500" /><span className="text-sm font-bold text-green-500">Protein</span></div><p className="text-xs text-neutral-500">Target: {proteinTarget}g</p></div><div className="text-3xl font-black font-mono text-white">{appData.dailyLog.protein}<span className="text-sm text-neutral-600">g</span></div></div><div className="w-full bg-neutral-800 h-2 rounded-full mb-6 relative z-10"><div className="bg-green-500 h-full rounded-full transition-all duration-700" style={{width: `${Math.min((appData.dailyLog.protein / proteinTarget)*100, 100)}%`}}></div></div><div className="grid grid-cols-3 gap-2 relative z-10">{[10, 25, 40].map(v => <button key={v} onClick={() => setAppData(p => ({...p, dailyLog: {...p.dailyLog, protein: p.dailyLog.protein + v}}))} className="py-3 bg-neutral-800 hover:bg-neutral-700 rounded-xl text-xs font-bold text-white">+{v}g</button>)}</div></div>
-                    <div className="bg-neutral-900 p-6 rounded-3xl border border-neutral-800 relative overflow-hidden"><div className="flex justify-between items-start mb-2 relative z-10"><div><div className="flex items-center gap-2 mb-1"><Icons.Flame className="w-5 h-5 text-orange-500" /><span className="text-sm font-bold text-orange-500">Energy</span></div><p className="text-xs text-neutral-500">Target: {calorieTarget} kcal</p></div><div className="text-3xl font-black font-mono text-white">{appData.dailyLog.calories}<span className="text-sm text-neutral-600">kcal</span></div></div><div className="w-full bg-neutral-800 h-2 rounded-full mb-6 relative z-10"><div className={`h-full rounded-full transition-all duration-700 ${appData.dailyLog.calories > calorieTarget + 200 ? 'bg-red-500' : 'bg-orange-500'}`} style={{width: `${Math.min((appData.dailyLog.calories / calorieTarget)*100, 100)}%`}}></div></div><div className="grid grid-cols-4 gap-2 relative z-10">{[100, 250, 500].map(v => <button key={v} onClick={() => setAppData(p => ({...p, dailyLog: {...p.dailyLog, calories: p.dailyLog.calories + v}}))} className="py-3 bg-neutral-800 hover:bg-neutral-700 rounded-xl text-xs font-bold text-white">+{v}</button>)}<button onClick={() => setAppData(p => ({...p, dailyLog: {...p.dailyLog, calories: 0}}))} className="py-3 bg-neutral-800 hover:bg-red-900/30 text-red-400 rounded-xl text-xs font-bold"><Icons.RotateCcw className="w-4 h-4 mx-auto"/></button></div></div>
-                    <div className="grid grid-cols-2 gap-4"><button onClick={() => setAppData(p => ({...p, dailyLog: {...p.dailyLog, creatine: !p.dailyLog.creatine}}))} className={`p-5 rounded-2xl border flex flex-col justify-between h-32 transition-all ${appData.dailyLog.creatine ? 'bg-purple-900/20 border-purple-900/50' : 'bg-neutral-900 border-neutral-800'}`}><div className="flex justify-between items-start w-full"><div className="flex items-center gap-1"><Icons.Pill className={`w-5 h-5 ${appData.dailyLog.creatine ? 'text-purple-500' : 'text-neutral-500'}`} /><button onClick={(e) => {e.stopPropagation(); setInfoModal('creatine')}}><Icons.HelpCircle className="w-3 h-3 text-neutral-600"/></button></div>{appData.dailyLog.creatine && <Icons.CheckCircle2 className="w-5 h-5 text-purple-500" />}</div><div className="text-left"><div className={`font-bold text-sm ${appData.dailyLog.creatine ? 'text-purple-400' : 'text-white'}`}>Creatine</div><div className="text-xs text-neutral-500">5g Monohydrate</div></div></button><div className="bg-neutral-900 p-5 rounded-2xl border border-neutral-800 flex flex-col justify-between h-32 relative overflow-hidden"><div className="flex justify-between items-start w-full relative z-10"><div className="flex items-center gap-1"><Icons.Droplets className="w-5 h-5 text-blue-500" /><button onClick={() => setInfoModal('water')}><Icons.HelpCircle className="w-3 h-3 text-neutral-600"/></button></div><span className="text-xl font-bold font-mono text-white">{appData.dailyLog.water}</span></div><button onClick={() => setAppData(p => ({...p, dailyLog: {...p.dailyLog, water: Math.min(p.dailyLog.water + 1, 8)}}))} className="w-full h-8 bg-blue-900/30 text-blue-400 rounded-lg text-xs font-bold relative z-10">+1 Cup</button><div className="absolute bottom-0 left-0 right-0 bg-blue-900/20 transition-all" style={{height: `${(appData.dailyLog.water/8)*100}%`}}></div></div></div>
-                    <div className="grid grid-cols-2 gap-4"><div className="bg-neutral-900 p-5 rounded-2xl border border-neutral-800 flex flex-col justify-between h-32"><div className="flex justify-between items-start"><div className="flex items-center gap-1"><Icons.Moon className="w-5 h-5 text-indigo-400" /><button onClick={() => setInfoModal('sleep')}><Icons.HelpCircle className="w-3 h-3 text-neutral-600"/></button></div><span className="text-xl font-bold font-mono text-white">{appData.dailyLog.sleep}h</span></div><div className="flex gap-1">{[6, 7, 8].map(h => (<button key={h} onClick={() => setAppData(p => ({...p, dailyLog: {...p.dailyLog, sleep: h}}))} className={`flex-1 h-8 rounded-lg text-[10px] font-bold ${appData.dailyLog.sleep === h ? 'bg-indigo-600 text-white' : 'bg-neutral-800 text-neutral-400'}`}>{h}{h===8?'+':''}</button>))}</div></div><button onClick={() => setAppData(p => ({...p, dailyLog: {...p.dailyLog, steps: !p.dailyLog.steps}}))} className={`p-5 rounded-2xl border flex flex-col justify-between h-32 transition-all ${appData.dailyLog.steps ? 'bg-orange-900/20 border-orange-900/50' : 'bg-neutral-900 border-neutral-800'}`}><div className="flex justify-between items-start w-full"><div className="flex items-center gap-1"><Icons.Footprints className={`w-5 h-5 ${appData.dailyLog.steps ? 'text-orange-500' : 'text-neutral-500'}`} /><button onClick={(e) => {e.stopPropagation(); setInfoModal('steps')}}><Icons.HelpCircle className="w-3 h-3 text-neutral-600"/></button></div>{appData.dailyLog.steps && <Icons.CheckCircle2 className="w-5 h-5 text-orange-500" />}</div><div className="text-left"><div className={`font-bold text-sm ${appData.dailyLog.steps ? 'text-orange-400' : 'text-white'}`}>NEAT</div><div className="text-xs text-neutral-500">8k Steps</div></div></button></div>
-                </div>
-            );
-
-            const ProgressTab = () => {
-                const latestWaist = parseFloat(appData.measurements[0]?.waist); const height = parseFloat(appData.userProfile.height);
-                const whtr = (latestWaist && height) ? (latestWaist / height).toFixed(2) : null;
-                let whtrStatus = 'bad'; if (whtr && whtr < 0.5) whtrStatus = 'good'; else if (whtr && whtr < 0.53) whtrStatus = 'ok';
-                const bf = calculateBodyFat(latestWaist, parseFloat(appData.measurements[0]?.neck), parseFloat(appData.measurements[0]?.hip), height, appData.userProfile.gender);
-                const graphData = appData.measurements.filter(m => m.waist !== '-' && m.weight !== '-').slice(0, 7).reverse();
-                const saveMeasurement = () => { if (!waistInput && !weightInput) return; const newEntry = { date: new Date().toISOString().split('T')[0], waist: waistInput || '-', weight: weightInput || '-', neck: neckInput || '-', hip: hipInput || '-' }; setAppData(prev => ({ ...prev, measurements: [newEntry, ...prev.measurements], userProfile: { ...prev.userProfile, weight: weightInput || prev.userProfile.weight } })); setWaistInput(''); setWeightInput(''); setNeckInput(''); setHipInput(''); };
-                return (
-                    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                        {whtr && (<div className={`p-5 rounded-2xl border flex items-center justify-between ${whtrStatus === 'good' ? 'bg-green-900/20 border-green-800' : 'bg-neutral-900 border-neutral-800'}`}><div><div className="flex items-center gap-2 mb-1"><Icons.Activity className={`w-5 h-5 ${whtrStatus === 'good' ? 'text-green-500' : 'text-yellow-500'}`} /><span className="font-bold text-white">Health Score (WHtR)</span></div><p className="text-xs text-neutral-400">Target: &lt; 0.50</p></div><div className="text-right"><div className={`text-3xl font-black ${whtrStatus === 'good' ? 'text-green-500' : 'text-yellow-500'}`}>{whtr}</div><div className="text-[10px] text-neutral-500 uppercase font-bold">{whtrStatus === 'good' ? 'Athletic' : 'At Risk'}</div></div></div>)}
-                        {bf ? (<div className="bg-blue-900/20 p-4 rounded-2xl border border-blue-800 flex flex-col justify-between"><div className="flex items-center gap-2 mb-2"><Icons.Scale className="w-4 h-4 text-blue-500" /><span className="text-xs font-bold text-white uppercase">Body Fat</span></div><div className="text-2xl font-black text-blue-400">{bf}%</div><div className="text-[10px] text-neutral-400">Navy Method</div></div>) : ( <div className="bg-neutral-900 p-4 rounded-2xl border border-neutral-800 flex flex-col justify-center text-center"><span className="text-xs text-neutral-500">Add Waist, Neck {appData.userProfile.gender === 'female' && '& Hip'}</span></div> )}
-                        {graphData.length > 1 && (<div className="bg-neutral-900 p-5 rounded-2xl border border-neutral-800"><div className="flex items-center gap-2 mb-4"><Icons.TrendingDown className="w-4 h-4 text-purple-500" /><span className="text-sm font-bold text-white">Recomp Trends</span></div><div className="flex h-32 items-end justify-between gap-2 px-2">{graphData.map((d, i) => (<div key={i} className="flex flex-col items-center gap-1 flex-1"><div className="w-full bg-blue-500/50 rounded-t" style={{height: `${Math.min(d.weight, 100)}px`}}></div><div className="w-full bg-purple-500 rounded-t -mt-8 border-t-2 border-black" style={{height: `${Math.min(d.waist, 100)/2}px`}}></div></div>))}</div></div>)}
-                        <div className="bg-neutral-900 p-5 rounded-2xl border border-neutral-800"><div className="flex items-center justify-between mb-4"><div className="flex items-center gap-2"><Icons.Ruler className="w-5 h-5 text-purple-500" /><span className="text-sm font-bold text-white">Body Metrics</span></div><button onClick={() => setInfoModal('recomp')} className="text-xs text-blue-400 flex items-center gap-1"><Icons.Info className="w-3 h-3"/> Guide</button></div><div className="grid grid-cols-2 gap-2 mb-2"><input type="number" placeholder="Waist (cm)" value={waistInput} onChange={(e) => setWaistInput(e.target.value)} className="bg-neutral-800 text-white p-3 rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-purple-500" /><input type="number" placeholder="Weight (kg)" value={weightInput} onChange={(e) => setWeightInput(e.target.value)} className="bg-neutral-800 text-white p-3 rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-purple-500" /></div><div className="grid grid-cols-2 gap-2 mb-4"><input type="number" placeholder="Neck (cm)" value={neckInput} onChange={(e) => setNeckInput(e.target.value)} className="bg-neutral-800 text-white p-3 rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-purple-500" />{appData.userProfile.gender === 'female' && <input type="number" placeholder="Hip (cm)" value={hipInput} onChange={(e) => setHipInput(e.target.value)} className="bg-neutral-800 text-white p-3 rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-purple-500" />}<button onClick={saveMeasurement} className="bg-purple-600 rounded-xl font-bold text-white text-sm py-3">Log</button></div><div className="max-h-32 overflow-y-auto space-y-2">{appData.measurements.map((m, i) => (<div key={i} className="flex justify-between text-xs text-neutral-400 bg-neutral-800/50 p-2 rounded-lg"><span>{m.date}</span><span className="text-white">W:{m.waist} Wgt:{m.weight}</span></div>))}</div></div>
-                    </div>
-                );
-            };
-
-            if (morningReport) return (<div className="fixed inset-0 bg-black/95 z-50 flex flex-col items-center justify-center p-6 text-center animate-in fade-in zoom-in"><Icons.ClipboardCheck className="w-16 h-16 text-blue-500 mb-6" /><h2 className="text-2xl font-black text-white mb-2">{morningReport.title}</h2><p className="text-neutral-400 mb-8 max-w-xs">{morningReport.text}</p><button onClick={() => setMorningReport(null)} className="w-full max-w-sm bg-white text-black font-bold py-4 rounded-xl">Let's Conquer Today</button></div>);
-            if (showWarmup) return (<div className="fixed inset-0 bg-indigo-950 z-50 flex flex-col items-center justify-center p-6 text-center animate-in fade-in zoom-in"><Icons.Flame className="w-16 h-16 text-orange-500 mb-6 animate-pulse" /><h2 className="text-3xl font-black text-white mb-2">Warm Up</h2><p className="text-indigo-200 mb-8">2 minutes now saves 2 months of rehab.</p><button onClick={startActualWorkout} className="w-full max-w-sm bg-white text-indigo-900 font-bold py-4 rounded-xl">I'm Warm</button><button onClick={() => setShowWarmup(false)} className="mt-4 text-indigo-400 text-sm">Cancel</button></div>);
-            if (showConfetti) return (<div className="fixed inset-0 z-50 pointer-events-none flex items-center justify-center"><div className="absolute inset-0 bg-black/20"></div><div className="animate-bounce"><Icons.PartyPopper className="w-32 h-32 text-yellow-500" /></div><h2 className="absolute mt-40 text-4xl font-black text-yellow-400 text-shadow-lg animate-pulse">PERFECT DAY!</h2></div>);
-            if (showSettings) return (<div className="fixed inset-0 bg-black/90 backdrop-blur-sm z-50 flex flex-col items-center justify-center p-6 text-center"><div className="bg-neutral-900 border border-neutral-800 p-6 rounded-3xl w-full max-w-sm"><h2 className="text-xl font-bold text-white mb-6">Settings</h2><div className="mb-4 text-left space-y-4"><input type="number" placeholder="Weight (kg)" value={appData.userProfile.weight} onChange={(e) => setAppData(p => ({...p, userProfile: {...p.userProfile, weight: e.target.value}}))} className="w-full bg-neutral-800 text-white p-3 rounded-xl focus:outline-none"/><div className="grid grid-cols-2 gap-3"><button onClick={exportData} className="bg-neutral-800 p-3 rounded-xl text-xs font-bold text-blue-400 flex items-center justify-center gap-2"><Icons.Download className="w-4 h-4"/>Backup</button><label className="bg-neutral-800 p-3 rounded-xl text-xs font-bold text-green-400 flex items-center justify-center gap-2 cursor-pointer"><Icons.Upload className="w-4 h-4"/>Restore<input type="file" onChange={importData} className="hidden" /></label></div></div><button onClick={() => setShowSettings(false)} className="w-full bg-blue-600 text-white font-bold py-3 rounded-xl">Close</button><button onClick={() => { if(confirm('Reset?')) { localStorage.clear(); window.location.reload(); } }} className="text-red-500 text-xs mt-4 w-full">Reset App</button></div></div>);
-            if (infoModal) {
-                const content = { calories: { title: "Why Calories?", text: "Deficit of -15% required." }, protein: { title: "Why Protein?", text: "2.2g/kg is required to build muscle." }, creatine: { title: "Why Creatine?", text: "5g daily for muscle water retention." }, water: { title: "Why Water?", text: "Required for fat metabolism." }, sleep: { title: "Why Sleep?", text: "Reduces Cortisol (Belly Fat)." }, steps: { title: "Why Steps?", text: "NEAT burns fat without stress." }, recomp: { title: "Recomp Truth", text: "Weight stays same, Waist goes down." } };
-                return (<div className="fixed inset-0 bg-black/90 backdrop-blur-sm z-50 flex flex-col items-center justify-center p-6"><div className="bg-neutral-900 border border-neutral-800 p-6 rounded-2xl max-w-sm w-full"><h3 className="text-lg font-bold text-white mb-4">{content[infoModal].title}</h3><p className="text-neutral-300 text-sm mb-6">{content[infoModal].text}</p><button onClick={() => setInfoModal(null)} className="w-full bg-blue-600 text-white font-bold py-3 rounded-xl">Got it</button></div></div>);
-            }
-
-            if (showFinisher) {
-                return (
-                    <div className="fixed inset-0 bg-purple-950 z-50 flex flex-col items-center justify-center p-6 text-center animate-in fade-in zoom-in">
-                        <Icons.Wind className="w-20 h-20 text-purple-400 mb-6 animate-pulse" />
-                        <h2 className="text-3xl font-black text-white mb-2">Corset Protocol</h2>
-                        <p className="text-purple-200 mb-4">Pull your belly button to your spine. Hold.</p>
-                        <div className="text-[120px] font-black font-mono text-white mb-4">{timer}</div>
-                        <div className="text-sm font-bold text-purple-300 mb-8">{isResting ? 'REST' : `HOLD: Round ${currentSet}/3`}</div>
-                        <button onClick={() => { setShowFinisher(false); finishWorkout(); }} className="text-purple-400 text-xs">Skip Finisher</button>
-                    </div>
-                );
-            }
-
-            if (view === 'onboarding') return (<div className="min-h-screen bg-neutral-950 text-white p-6 flex flex-col justify-center max-w-md mx-auto font-sans"><div className="mb-10 text-center"><Icons.Trophy className="w-10 h-10 text-blue-500 mx-auto mb-4" /><h1 className="text-4xl font-black mb-2">Forever Fit</h1><p className="text-neutral-400">The Legacy Protocol.</p></div><div className="space-y-4 mb-8"><input className="w-full bg-neutral-900 p-4 rounded-xl text-white" placeholder="Name" onChange={e => setAppData({...appData, userProfile: {...appData.userProfile, name: e.target.value}})} /><div className="flex gap-2"><input type="number" className="w-full bg-neutral-900 p-4 rounded-xl text-white" placeholder="Weight (kg)" onChange={e => setAppData({...appData, userProfile: {...appData.userProfile, weight: e.target.value}})} /><input type="number" className="w-full bg-neutral-900 p-4 rounded-xl text-white" placeholder="Height (cm)" onChange={e => setAppData({...appData, userProfile: {...appData.userProfile, height: e.target.value}})} /></div><div className="flex gap-2"><input type="number" className="w-full bg-neutral-900 p-4 rounded-xl text-white" placeholder="Age" onChange={e => setAppData({...appData, userProfile: {...appData.userProfile, age: e.target.value}})} /><select className="w-full bg-neutral-900 p-4 rounded-xl text-white" onChange={e => setAppData({...appData, userProfile: {...appData.userProfile, gender: e.target.value}})}><option value="male">Male</option><option value="female">Female</option></select></div></div><button onClick={() => { if(appData.userProfile.name) { setAppData(p => ({...p, userProfile: {...p.userProfile, onboarded: true}})); setView('main'); }}} className="w-full bg-blue-600 text-white font-bold py-4 rounded-xl">Begin</button></div>);
-            if (view === 'summary') return (<div className="min-h-screen bg-neutral-950 text-white p-6 flex flex-col items-center justify-center text-center"><Icons.CheckCircle2 className="w-20 h-20 text-green-500 mb-6" /><h1 className="text-3xl font-bold mb-2">Workout Complete</h1><p className="text-neutral-400 mb-8">Evolution Engine Updated.</p><button onClick={() => setView('main')} className="w-full max-w-xs bg-white text-black font-bold py-4 rounded-xl">Continue</button></div>);
-            if (view === 'workout' && activeWorkout) {
-                const ex = activeWorkout.exercises[exerciseIndex]; const isTimed = ex.type === 'time'; const ExerciseIcon = ex.icon || Icons.Generic;
-                return (
-                    <div className={`fixed inset-0 flex flex-col ${isResting ? 'bg-indigo-950' : 'bg-black'} transition-colors duration-500 z-40`}>
-                        <div className="p-4 flex justify-between items-center safe-area-top"><div className="text-xs font-bold text-neutral-400">Ex {exerciseIndex + 1}/{activeWorkout.exercises.length}</div><button onClick={() => setShowQuit(true)}><Icons.X className="w-6 h-6 text-neutral-400" /></button></div>
-                        <div className="flex-1 flex flex-col items-center justify-center p-6 text-center text-white overflow-y-auto">
-                            {isResting ? (<div className="w-full max-w-sm animate-in fade-in zoom-in"><div className="text-indigo-400 font-bold text-xs mb-6">Recover</div><div className="text-[100px] font-black font-mono mb-4">{timer}</div><button onClick={handleTimerComplete} className="w-full py-4 bg-indigo-600 rounded-xl font-bold">Start Now</button></div>) : (<div className="w-full max-w-md"><div className="mb-4 relative"><div className="flex justify-center gap-2 mb-4">{[...Array(totalSets)].map((_,s) => <div key={s} className={`h-1 w-8 rounded-full ${s < currentSet ? 'bg-blue-500' : 'bg-neutral-800'}`}></div>)}</div><button onClick={swapExercise} className="absolute top-0 right-0 p-2 bg-neutral-800 rounded-full text-neutral-400"><Icons.RefreshCw className="w-4 h-4"/></button><div className="mb-6"><ExerciseIcon /></div><h2 className="text-3xl font-black mb-4 leading-tight">{ex.name}</h2><p className="text-neutral-400 text-sm bg-neutral-900/50 p-3 rounded-lg border border-neutral-800">{ex.desc}</p></div>{isTimed && !showTimedInput ? (<div><div className="text-8xl font-mono font-bold mb-8">{timer}</div><div className="space-y-3"><button onClick={() => setIsPaused(!isPaused)} className="w-full bg-neutral-800 py-4 rounded-xl font-bold">{isPaused ? <Icons.Play className="mx-auto"/> : <Icons.Pause className="mx-auto"/>}</button><button onClick={() => setShowTimedInput(true)} className="w-full bg-neutral-800/50 py-3 rounded-xl font-bold text-sm text-neutral-400 hover:text-white hover:bg-neutral-800">Log Set</button></div></div>) : (<div className="space-y-4"><div className="bg-neutral-900 p-2 rounded-2xl border border-neutral-800 flex items-center justify-between px-4"><div className="flex flex-col text-left"><span className="text-xs font-bold text-neutral-500">TARGET: {ex.target}</span><span className="text-[10px] text-blue-400 font-bold">TO BEAT: {appData.exerciseHistory[ex.id]?.maxReps || '-'}</span></div>{isTimed ? (<span className="text-3xl font-bold text-white">{ex.duration}s</span>) : (<input type="number" value={repInput} onChange={(e) => setRepInput(e.target.value)} placeholder="#" className="bg-transparent text-right text-3xl font-bold w-24 focus:outline-none text-white" />)}</div><div className="bg-neutral-900 p-3 rounded-2xl border border-neutral-800"><div className="text-[10px] font-bold text-neutral-500 uppercase mb-2">Effort Level (RPE)</div><div className="flex gap-2"><button onClick={() => setRpeInput('easy')} className={`flex-1 py-3 rounded-xl text-xs font-bold ${rpeInput === 'easy' ? 'bg-neutral-600 text-neutral-300' : 'bg-neutral-800 text-neutral-500'}`}>Easy</button><button onClick={() => setRpeInput('good')} className={`flex-1 py-3 rounded-xl text-xs font-bold ${rpeInput === 'good' ? 'bg-yellow-600 text-white' : 'bg-neutral-800 text-yellow-500'}`}>Good</button><button onClick={() => setRpeInput('hard')} className={`flex-1 py-3 rounded-xl text-xs font-bold ${rpeInput === 'hard' ? 'bg-green-600 text-white shadow-[0_0_15px_rgba(22,163,74,0.5)]' : 'bg-neutral-800 text-green-500'}`}>Hard (Goal)</button></div></div><button onClick={handleRepComplete} disabled={(!isTimed && !repInput) || !rpeInput} className={`w-full py-4 rounded-xl font-bold transition-all ${((isTimed || repInput) && rpeInput) ? 'bg-blue-600 text-white' : 'bg-neutral-800 text-neutral-600 cursor-not-allowed'}`}>Finish Set</button></div>)}</div>)}
-                        </div>
-                        {showQuit && <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-6"><div className="bg-neutral-900 border border-neutral-800 p-6 rounded-2xl max-w-sm w-full text-center"><h3 className="text-lg font-bold mb-4 text-white">Stop Workout?</h3><div className="flex gap-3"><button onClick={() => { setView('main'); setShowQuit(false); }} className="flex-1 bg-red-900/20 text-red-500 py-3 rounded-xl font-bold">Quit</button><button onClick={() => setShowQuit(false)} className="flex-1 bg-blue-600 text-white py-3 rounded-xl font-bold">Resume</button></div></div></div>}
-                    </div>
-                );
-            }
-
+            if (data.view === 'onboarding') return <Onboarding data={data} setData={setData} />;
             return (
-                <div className="min-h-screen bg-black text-white pb-24 font-sans flex flex-col">
-                    <div className="p-6 pt-8 flex justify-between items-center bg-neutral-900/30 border-b border-neutral-900 sticky top-0 backdrop-blur-md z-10"><div><h1 className="text-lg font-bold flex items-center gap-2">{appData.userProfile.name} {isPerfectDayLive() && <Icons.Star className="w-4 h-4 text-yellow-500 fill-yellow-500 animate-pulse" />}</h1><p className="text-xs text-neutral-500">Day {appData.habitStreak + 1}</p></div><button onClick={() => setShowSettings(true)} className="bg-neutral-800 rounded-full w-8 h-8 flex items-center justify-center"><Icons.Settings className="w-4 h-4 text-neutral-400" /></button></div>
-                    <div className="p-5 flex-1 overflow-y-auto">{activeTab === 'train' && <TrainTab />}{activeTab === 'fuel' && <FuelTab />}{activeTab === 'progress' && <ProgressTab />}</div>
-                    <div className="fixed bottom-0 left-0 right-0 bg-neutral-900 border-t border-neutral-800 p-2 safe-area-bottom z-20"><div className="flex justify-around items-center"><button onClick={() => setActiveTab('train')} className={`flex flex-col items-center p-2 rounded-xl w-20 ${activeTab === 'train' ? 'text-white' : 'text-neutral-500'}`}><Icons.LayoutDashboard className="w-6 h-6 mb-1" /><span className="text-[10px] font-bold uppercase">Train</span></button><button onClick={() => setActiveTab('fuel')} className={`flex flex-col items-center p-2 rounded-xl w-20 ${activeTab === 'fuel' ? 'text-green-400' : 'text-neutral-500'}`}><Icons.Utensils className="w-6 h-6 mb-1" /><span className="text-[10px] font-bold uppercase">Fuel</span></button><button onClick={() => setActiveTab('progress')} className={`flex flex-col items-center p-2 rounded-xl w-20 ${activeTab === 'progress' ? 'text-blue-400' : 'text-neutral-500'}`}><Icons.BarChart3 className="w-6 h-6 mb-1" /><span className="text-[10px] font-bold uppercase">Data</span></button></div></div>
-                    {showSettings && <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-6"><div className="bg-neutral-900 border border-neutral-800 p-6 rounded-3xl w-full max-w-sm"><h2 className="text-xl font-bold mb-4">Settings</h2><button onClick={() => setShowSettings(false)} className="w-full bg-blue-600 font-bold py-3 rounded-xl mb-4">Close</button><button onClick={() => { if(confirm('Reset?')) { localStorage.clear(); window.location.reload(); } }} className="text-red-500 text-xs w-full">Reset App</button></div></div>}
-                </div>
+                <>
+                    {toast && <Toast msg={toast.msg} onUndo={toast.onUndo} />}
+                    {data.view === 'dashboard' ? <Dashboard data={data} setData={setData} showToast={showToast} /> : <Workout data={data} setData={setData} showToast={showToast} />}
+                </>
             );
         };
 
         const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<AbsRecompLegacy />);
+        root.render(<RecompApp />);
     </script>
 </body>
 </html>
